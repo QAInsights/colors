@@ -272,29 +272,39 @@ function drawTextToCanvas(ctx, scaleFactor) {
  * @param {HTMLElement} guideH - The horizontal guide element
  */
 function setupTextDragAndDrop(textPreview, preview, guideV, guideH) {
-    // Text drag and drop event listeners
+    // Define the event handlers as named functions so they can be properly removed
+    function handleMouseMove(e) {
+        dragMove(e, preview, textPreview, guideV, guideH);
+    }
+    
+    function handleMouseUp() {
+        dragEnd(textPreview, guideV, guideH);
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+    }
+    
+    function handleTouchMove(e) {
+        dragMove(e, preview, textPreview, guideV, guideH);
+    }
+    
+    function handleTouchEnd() {
+        dragEnd(textPreview, guideV, guideH);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+    }
+    
+    // Mouse events
     textPreview.addEventListener('mousedown', (e) => {
         dragStart(e, textPreview);
-        
-        // Add event listeners for move and end events
-        document.addEventListener('mousemove', (e) => dragMove(e, preview, textPreview, guideV, guideH));
-        document.addEventListener('mouseup', () => {
-            dragEnd(textPreview, guideV, guideH);
-            document.removeEventListener('mousemove', (e) => dragMove(e, preview, textPreview, guideV, guideH));
-            document.removeEventListener('mouseup', () => {});
-        });
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
     });
     
+    // Touch events
     textPreview.addEventListener('touchstart', (e) => {
         dragStart(e, textPreview);
-        
-        // Add event listeners for move and end events
-        document.addEventListener('touchmove', (e) => dragMove(e, preview, textPreview, guideV, guideH), { passive: false });
-        document.addEventListener('touchend', () => {
-            dragEnd(textPreview, guideV, guideH);
-            document.removeEventListener('touchmove', (e) => dragMove(e, preview, textPreview, guideV, guideH));
-            document.removeEventListener('touchend', () => {});
-        });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd);
     }, { passive: false });
 }
 
