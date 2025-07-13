@@ -461,7 +461,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
 
-    // Background
+    // Dimension Presets
+    dimensionPreset.addEventListener('change', (e) => {
+        applyDimensionPreset(e.target.value);
+    });
+    
+    saveCustomPreset.addEventListener('click', () => {
+        const width = parseInt(widthInput.value);
+        const height = parseInt(heightInput.value);
+        
+        if (!width || !height || width <= 0 || height <= 0) {
+            alert('Please enter valid dimensions before saving.');
+            return;
+        }
+        
+        const name = prompt(`Enter a name for this preset (${width}×${height}):`, `Custom ${width}×${height}`);
+        if (name !== null) { // User didn't cancel
+            const success = addCustomPreset(width, height, name.trim() || undefined);
+            if (success) {
+                // Select the newly created preset
+                dimensionPreset.value = `${width}x${height}`;
+                alert('Custom preset saved successfully!');
+            } else {
+                alert('A preset with these dimensions already exists.');
+            }
+        }
+    });
+    
+    // Add context menu for custom presets (right-click to delete)
+    dimensionPreset.addEventListener('contextmenu', (e) => {
+        const selectedOption = dimensionPreset.options[dimensionPreset.selectedIndex];
+        if (selectedOption && selectedOption.getAttribute('data-custom') === 'true') {
+            e.preventDefault();
+            const presetId = selectedOption.getAttribute('data-preset-id');
+            const presetName = selectedOption.textContent;
+            
+            if (confirm(`Delete custom preset "${presetName}"?`)) {
+                removeCustomPreset(presetId);
+                dimensionPreset.value = 'custom'; // Reset to custom
+            }
+        }
+    });
 
     // Background
     function handleDimensionChange() {
@@ -515,43 +555,55 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pattern === 'none') {
             return '';
         }
-        
-        if (pattern === 'blobs') {
-            for (let i = 0; i < patternCount; i++) {
-                const r = random() * 50 + 20;
-                const cx = random() * width;
-                const cy = random() * height;
-                patternContent += `<circle cx='${cx}' cy='${cy}' r='${r}' fill='${patternColor}' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'triangles') {
-            for (let i = 0; i < patternCount; i++) {
-                const size = random() * 80 + 20;
-                const x = random() * width;
-                const y = random() * height;
-                const angle = random() * 360;
-                patternContent += `<polygon points='${x},${y-size/2} ${x-size/2},${y+size/2} ${x+size/2},${y+size/2}' transform='rotate(${angle} ${x} ${y})' fill='${patternColor}' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'circles') {
-            for (let i = 0; i < patternCount; i++) {
-                const r = random() * 30 + 5;
-                const cx = random() * width;
-                const cy = random() * height;
-                patternContent += `<circle cx='${cx}' cy='${cy}' r='${r}' stroke='${patternColor}' stroke-width='2' fill='none' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'lines') {
-            for (let i = 0; i < patternCount; i++) {
-                const x1 = random() * width;
-                const y1 = random() * height;
-                const x2 = x1 + (random() - 0.5) * 200;
-                const y2 = y1 + (random() - 0.5) * 200;
-                patternContent += `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='${patternColor}' stroke-width='3' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
+        if (state.gradientColors.length < 5) {
+            state.gradientColors.push('#ffffff'); // Add white as default
+            renderGradientColorPickers();
+            updatePreview();
         }
-        
-        return patternContent;
-    }
+    });
 
-    // Event listeners will be set up in the initialize function
+    removeGradientColor.addEventListener('click', () => {
+        if (state.gradientColors.length > 2) {
+            state.gradientColors.pop();
+            renderGradientColorPickers();
+            updatePreview();
+        }
+    });
+    imageUpload.addEventListener('change', handleImageUpload);
+
+    // Text
+    textContent.addEventListener('input', (e) => { state.text = e.target.value; updatePreview(); });
+    fontFamily.addEventListener('change', (e) => { state.fontFamily = e.target.value; updatePreview(); });
+    fontSize.addEventListener('input', (e) => { 
+        state.fontSize = parseInt(e.target.value, 10); 
+        fontSizeValue.textContent = `${e.target.value}px`;
+        updatePreview();
+        centerText(); // Re-center text when font size changes
+    });
+    textColor.addEventListener('input', (e) => { state.textColor = e.target.value; textColorText.value = e.target.value; updatePreview(); });
+    textColorText.addEventListener('change', (e) => { state.textColor = e.target.value; textColor.value = e.target.value; updatePreview(); });
+    textAlignContainer.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            state.textAlign = e.target.dataset.align;
+            document.querySelectorAll('#textAlign button').forEach(btn => btn.classList.remove('bg-blue-500', 'text-white'));
+            e.target.classList.add('bg-blue-500', 'text-white');
+            updatePreview();
+        }
+    });
+
+    // Pattern
+    patternType.addEventListener('change', (e) => { state.pattern = e.target.value; updatePreview(); updateControlVisibility(); });
+    patternColor.addEventListener('input', (e) => { state.patternColor = e.target.value; patternColorText.value = e.target.value; drawPattern(); });
+    patternColorText.addEventListener('change', (e) => { state.patternColor = e.target.value; patternColor.value = e.target.value; drawPattern(); });
+    patternOpacity.addEventListener('input', (e) => { state.patternOpacity = parseFloat(e.target.value); drawPattern(); });
+    patternCount.addEventListener('input', (e) => { state.patternCount = parseInt(e.target.value, 10); drawPattern(); });
+
+    // Border Radius
+    borderRadius.addEventListener('input', (e) => { 
+        state.borderRadius = parseInt(e.target.value, 10); 
+        borderRadiusValue.textContent = `${e.target.value}px`;
+        updatePreview(); 
+    });
 
     // Drag and Drop for Text
     let isDragging = false;
@@ -646,7 +698,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.removeEventListener('touchend', dragEnd);
     }
 
-    // Text drag and drop event listeners moved to initialize function
+    textPreview.addEventListener('mousedown', dragStart);
+    textPreview.addEventListener('touchstart', dragStart, { passive: false });
 
     // --- High-Resolution Canvas Download Logic ---
     function createHighResolutionCanvas(scaleFactor = 4) {
@@ -945,7 +998,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Download button event listeners moved to initialize function
+    // Event listeners for download buttons
+    downloadPNG.addEventListener('click', () => {
+        const scaleFactor = parseInt(resolutionScale.value);
+        downloadHighResolutionImage('png', scaleFactor);
+    });
+    downloadJPG.addEventListener('click', () => {
+        const scaleFactor = parseInt(resolutionScale.value);
+        downloadHighResolutionImage('jpeg', scaleFactor);
+    });
     
     // --- Initial Setup ---
     function initialize() {
@@ -956,155 +1017,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (zoomLevel) {
             zoomLevel.addEventListener('change', applyZoom);
         }
-        
-        // Background type selection
-        btnTypeColor.addEventListener('click', () => {
-            state.bgType = 'color';
-            btnTypeColor.classList.add('bg-blue-500', 'text-white');
-            btnTypeGradient.classList.remove('bg-blue-500', 'text-white');
-            btnTypeImage.classList.remove('bg-blue-500', 'text-white');
-            updateControlVisibility();
-            updatePreview();
-        });
-        
-        btnTypeGradient.addEventListener('click', () => {
-            state.bgType = 'gradient';
-            btnTypeGradient.classList.add('bg-blue-500', 'text-white');
-            btnTypeColor.classList.remove('bg-blue-500', 'text-white');
-            btnTypeImage.classList.remove('bg-blue-500', 'text-white');
-            updateControlVisibility();
-            updatePreview();
-        });
-        
-        btnTypeImage.addEventListener('click', () => {
-            state.bgType = 'image';
-            btnTypeImage.classList.add('bg-blue-500', 'text-white');
-            btnTypeColor.classList.remove('bg-blue-500', 'text-white');
-            btnTypeGradient.classList.remove('bg-blue-500', 'text-white');
-            updateControlVisibility();
-            updatePreview();
-        });
-        
-        // Background color
-        color1Input.addEventListener('input', (e) => { state.color1 = e.target.value; color1Text.value = e.target.value; updatePreview(); });
-        color1Text.addEventListener('change', (e) => { state.color1 = e.target.value; color1Input.value = e.target.value; updatePreview(); });
-        
-        // Gradient direction
-        gradientDirection.addEventListener('input', (e) => { state.gradientAngle = parseInt(e.target.value, 10); updatePreview(); });
-        
-        // Image upload
-        imageUpload.addEventListener('change', handleImageUpload);
-        
-        // Dimension inputs
-        widthInput.addEventListener('change', handleDimensionChange);
-        heightInput.addEventListener('change', handleDimensionChange);
-        
-        // Event listeners for gradient colors
-        addGradientColor.addEventListener('click', () => {
-            if (state.gradientColors.length < 5) {
-                state.gradientColors.push('#ffffff'); // Add white as default
-                renderGradientColorPickers();
-                updatePreview();
-            }
-        });
-        
-        removeGradientColor.addEventListener('click', () => {
-            if (state.gradientColors.length > 2) {
-                state.gradientColors.pop();
-                renderGradientColorPickers();
-                updatePreview();
-            }
-        });
-        
-        // Text
-        textContent.addEventListener('input', (e) => { state.text = e.target.value; updatePreview(); });
-        fontFamily.addEventListener('change', (e) => { state.fontFamily = e.target.value; updatePreview(); });
-        fontSize.addEventListener('input', (e) => { 
-            state.fontSize = parseInt(e.target.value, 10); 
-            fontSizeValue.textContent = `${state.fontSize}px`;
-            updatePreview();
-            centerText(); // Re-center text when font size changes
-        });
-        textColor.addEventListener('input', (e) => { state.textColor = e.target.value; textColorText.value = e.target.value; updatePreview(); });
-        textColorText.addEventListener('change', (e) => { state.textColor = e.target.value; textColor.value = e.target.value; updatePreview(); });
-        textAlignContainer.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') {
-                state.textAlign = e.target.dataset.align;
-                document.querySelectorAll('#textAlign button').forEach(btn => btn.classList.remove('bg-blue-500', 'text-white'));
-                e.target.classList.add('bg-blue-500', 'text-white');
-                updatePreview();
-            }
-        });
-        
-        // Pattern
-        patternType.addEventListener('change', (e) => { state.pattern = e.target.value; updatePreview(); updateControlVisibility(); });
-        patternColor.addEventListener('input', (e) => { state.patternColor = e.target.value; patternColorText.value = e.target.value; drawPattern(); });
-        patternColorText.addEventListener('change', (e) => { state.patternColor = e.target.value; patternColor.value = e.target.value; drawPattern(); });
-        patternOpacity.addEventListener('input', (e) => { state.patternOpacity = parseFloat(e.target.value); drawPattern(); });
-        patternCount.addEventListener('input', (e) => { state.patternCount = parseInt(e.target.value, 10); drawPattern(); });
-        
-        // Border radius
-        borderRadius.addEventListener('input', (e) => { 
-            state.borderRadius = parseInt(e.target.value, 10); 
-            borderRadiusValue.textContent = `${state.borderRadius}px`;
-            updatePreview(); 
-        });
-        
-        // Text drag and drop
-        textPreview.addEventListener('mousedown', dragStart);
-        textPreview.addEventListener('touchstart', dragStart, { passive: false });
-        
-        // Dimension Presets
-        dimensionPreset.addEventListener('change', (e) => {
-            applyDimensionPreset(e.target.value);
-        });
-        
-        saveCustomPreset.addEventListener('click', () => {
-            const width = parseInt(widthInput.value);
-            const height = parseInt(heightInput.value);
-            
-            if (!width || !height || width <= 0 || height <= 0) {
-                alert('Please enter valid dimensions before saving.');
-                return;
-            }
-            
-            const name = prompt(`Enter a name for this preset (${width}×${height}):`, `Custom ${width}×${height}`);
-            if (name !== null) { // User didn't cancel
-                const success = addCustomPreset(width, height, name.trim() || undefined);
-                if (success) {
-                    // Select the newly created preset
-                    dimensionPreset.value = `${width}x${height}`;
-                    alert('Custom preset saved successfully!');
-                } else {
-                    alert('A preset with these dimensions already exists.');
-                }
-            }
-        });
-        
-        // Add context menu for custom presets (right-click to delete)
-        dimensionPreset.addEventListener('contextmenu', (e) => {
-            const selectedOption = dimensionPreset.options[dimensionPreset.selectedIndex];
-            if (selectedOption && selectedOption.getAttribute('data-custom') === 'true') {
-                e.preventDefault();
-                const presetId = selectedOption.getAttribute('data-preset-id');
-                const presetName = selectedOption.textContent;
-                
-                if (confirm(`Delete custom preset "${presetName}"?`)) {
-                    removeCustomPreset(presetId);
-                    dimensionPreset.value = 'custom'; // Reset to custom
-                }
-            }
-        });
-        
-        // Download buttons
-        downloadPNG.addEventListener('click', () => {
-            const scaleFactor = parseInt(resolutionScale.value);
-            downloadHighResolutionImage('png', scaleFactor);
-        });
-        downloadJPG.addEventListener('click', () => {
-            const scaleFactor = parseInt(resolutionScale.value);
-            downloadHighResolutionImage('jpeg', scaleFactor);
-        });
         
         // Set initial dimension preset selection
         const currentDimensions = `${state.width}x${state.height}`;

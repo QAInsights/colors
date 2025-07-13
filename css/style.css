@@ -1,6 +1,14 @@
 body {
     font-family: 'Montserrat', sans-serif;
 }
+
+.preview-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    padding: 20px;
+}
 .preview-area {
     background-image:
         linear-gradient(45deg, #ccc 25%, transparent 25%),
@@ -9,6 +17,12 @@ body {
         linear-gradient(-45deg, transparent 75%, #ccc 75%);
     background-size: 20px 20px;
     background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px auto;
+    transform-origin: top center;
+    transition: transform 0.3s ease;
 }
 
 /* Dark mode preview area */
@@ -101,6 +115,7 @@ input[type="color"]::-webkit-color-swatch {
     background-color: rgba(255, 0, 150, 0.8);
     display: none;
     z-index: 10;
+    pointer-events: none; /* Ensures guides don't interfere with mouse events */
 }
 .snap-guide.vertical {
     width: 2px;

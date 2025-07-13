@@ -259,12 +259,35 @@
             <!-- Preview Area -->
             <div class="w-full lg:w-2/3">
                 <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-lg h-full">
-                    <div class="preview-area w-full h-full rounded-lg overflow-hidden flex items-center justify-center">
-                        <div id="preview" class="shadow-2xl relative">
-                             <svg id="pattern-svg"></svg>
-                             <div id="textPreview" class="w-max break-words whitespace-pre-wrap p-2"></div>
-                             <div id="guide-v" class="snap-guide vertical"></div>
-                             <div id="guide-h" class="snap-guide horizontal"></div>
+                    <!-- Zoom Controls -->
+                    <div class="flex justify-end mb-2">
+                        <div class="relative w-40">
+                            <select id="zoomLevel" class="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 border-transparent appearance-none cursor-pointer text-sm">
+                                <option value="0.25">25% zoom</option>
+                                <option value="0.5">50% zoom</option>
+                                <option value="0.75">75% zoom</option>
+                                <option value="1" selected>100% zoom</option>
+                                <option value="1.25">125% zoom</option>
+                                <option value="1.5">150% zoom</option>
+                                <option value="2">200% zoom</option>
+                                <option value="fit">Fit to screen</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Preview Container -->
+                    <div class="preview-container" style="max-height: calc(100vh - 250px); overflow: auto;">
+                        <div class="preview-area rounded-lg">
+                            <div id="preview" class="shadow-2xl relative">
+                                <svg id="pattern-svg"></svg>
+                                <div id="textPreview" class="w-max break-words whitespace-pre-wrap p-2"></div>
+                                <div id="guide-v" class="snap-guide vertical"></div>
+                                <div id="guide-h" class="snap-guide horizontal"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
