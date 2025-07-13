@@ -21,7 +21,106 @@ document.addEventListener('DOMContentLoaded', () => {
         patternCount: 20,
     };
 
+    // --- Dimension Preset Management ---
+    const STORAGE_KEY = 'imageGenerator_customPresets';
+    
+    function getCustomPresets() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            console.warn('Failed to load custom presets:', e);
+            return [];
+        }
+    }
+    
+    function saveCustomPresets(presets) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
+        } catch (e) {
+            console.warn('Failed to save custom presets:', e);
+        }
+    }
+    
+    function addCustomPreset(width, height, name) {
+        const presets = getCustomPresets();
+        const newPreset = {
+            id: `custom_${Date.now()}`,
+            name: name || `Custom ${width}×${height}`,
+            width: parseInt(width),
+            height: parseInt(height),
+            value: `${width}x${height}`
+        };
+        
+        // Check if preset already exists
+        const exists = presets.find(p => p.width === newPreset.width && p.height === newPreset.height);
+        if (!exists) {
+            presets.push(newPreset);
+            saveCustomPresets(presets);
+            updateDimensionPresetOptions();
+            return true;
+        }
+        return false;
+    }
+    
+    function removeCustomPreset(id) {
+        const presets = getCustomPresets().filter(p => p.id !== id);
+        saveCustomPresets(presets);
+        updateDimensionPresetOptions();
+    }
+    
+    function updateDimensionPresetOptions() {
+        const customPresets = getCustomPresets();
+        
+        // Remove existing custom options
+        const existingCustomOptions = dimensionPreset.querySelectorAll('option[data-custom="true"]');
+        existingCustomOptions.forEach(option => option.remove());
+        
+        // Add custom presets
+        if (customPresets.length > 0) {
+            let customGroup = dimensionPreset.querySelector('optgroup[label="Custom Presets"]');
+            if (!customGroup) {
+                customGroup = document.createElement('optgroup');
+                customGroup.label = 'Custom Presets';
+                dimensionPreset.insertBefore(customGroup, dimensionPreset.children[1]);
+            }
+            
+            customGroup.innerHTML = '';
+            customPresets.forEach(preset => {
+                const option = document.createElement('option');
+                option.value = preset.value;
+                option.textContent = `${preset.name} (${preset.width}×${preset.height})`;
+                option.setAttribute('data-custom', 'true');
+                option.setAttribute('data-preset-id', preset.id);
+                customGroup.appendChild(option);
+            });
+        } else {
+            // Remove empty custom group
+            const customGroup = dimensionPreset.querySelector('optgroup[label="Custom Presets"]');
+            if (customGroup) {
+                customGroup.remove();
+            }
+        }
+    }
+    
+    function applyDimensionPreset(value) {
+        if (value === 'custom') {
+            return; // Keep current dimensions
+        }
+        
+        const [width, height] = value.split('x').map(Number);
+        if (width && height) {
+            state.width = width;
+            state.height = height;
+            widthInput.value = width;
+            heightInput.value = height;
+            updatePreview();
+        }
+    }
+
     // --- DOM Element References ---
+    const dimensionPreset = document.getElementById('dimensionPreset');
+    const saveCustomPreset = document.getElementById('saveCustomPreset');
     const widthInput = document.getElementById('widthInput');
     const heightInput = document.getElementById('heightInput');
     const preview = document.getElementById('preview');
@@ -255,9 +354,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Event Listeners ---
 
+    // Dimension Presets
+    dimensionPreset.addEventListener('change', (e) => {
+        applyDimensionPreset(e.target.value);
+    });
+    
+    saveCustomPreset.addEventListener('click', () => {
+        const width = parseInt(widthInput.value);
+        const height = parseInt(heightInput.value);
+        
+        if (!width || !height || width <= 0 || height <= 0) {
+            alert('Please enter valid dimensions before saving.');
+            return;
+        }
+        
+        const name = prompt(`Enter a name for this preset (${width}×${height}):`, `Custom ${width}×${height}`);
+        if (name !== null) { // User didn't cancel
+            const success = addCustomPreset(width, height, name.trim() || undefined);
+            if (success) {
+                // Select the newly created preset
+                dimensionPreset.value = `${width}x${height}`;
+                alert('Custom preset saved successfully!');
+            } else {
+                alert('A preset with these dimensions already exists.');
+            }
+        }
+    });
+    
+    // Add context menu for custom presets (right-click to delete)
+    dimensionPreset.addEventListener('contextmenu', (e) => {
+        const selectedOption = dimensionPreset.options[dimensionPreset.selectedIndex];
+        if (selectedOption && selectedOption.getAttribute('data-custom') === 'true') {
+            e.preventDefault();
+            const presetId = selectedOption.getAttribute('data-preset-id');
+            const presetName = selectedOption.textContent;
+            
+            if (confirm(`Delete custom preset "${presetName}"?`)) {
+                removeCustomPreset(presetId);
+                dimensionPreset.value = 'custom'; // Reset to custom
+            }
+        }
+    });
+
     // Background
-    widthInput.addEventListener('change', (e) => { state.width = parseInt(e.target.value, 10); updatePreview(); });
-    heightInput.addEventListener('change', (e) => { state.height = parseInt(e.target.value, 10); updatePreview(); });
+    widthInput.addEventListener('change', (e) => { 
+        state.width = parseInt(e.target.value, 10); 
+        updatePreview();
+        // Update preset selection to custom when manually changing dimensions
+        if (dimensionPreset.value !== 'custom') {
+            const currentValue = `${state.width}x${state.height}`;
+            const matchingOption = Array.from(dimensionPreset.options).find(opt => opt.value === currentValue);
+            dimensionPreset.value = matchingOption ? currentValue : 'custom';
+        }
+    });
+    heightInput.addEventListener('change', (e) => { 
+        state.height = parseInt(e.target.value, 10); 
+        updatePreview();
+        // Update preset selection to custom when manually changing dimensions
+        if (dimensionPreset.value !== 'custom') {
+            const currentValue = `${state.width}x${state.height}`;
+            const matchingOption = Array.from(dimensionPreset.options).find(opt => opt.value === currentValue);
+            dimensionPreset.value = matchingOption ? currentValue : 'custom';
+        }
+    });
     btnTypeColor.addEventListener('click', () => { state.bgType = 'color'; updatePreview(); updateControlVisibility(); });
     btnTypeGradient.addEventListener('click', () => { state.bgType = 'gradient'; updatePreview(); updateControlVisibility(); });
     btnTypeImage.addEventListener('click', () => { state.bgType = 'image'; updatePreview(); updateControlVisibility(); });
@@ -415,6 +574,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Setup ---
     function initialize() {
+        // Load custom presets
+        updateDimensionPresetOptions();
+        
+        // Set initial dimension preset selection
+        const currentDimensions = `${state.width}x${state.height}`;
+        const matchingOption = Array.from(dimensionPreset.options).find(opt => opt.value === currentDimensions);
+        dimensionPreset.value = matchingOption ? currentDimensions : 'custom';
+        
         // Set initial values from state
         widthInput.value = state.width;
         heightInput.value = state.height;
