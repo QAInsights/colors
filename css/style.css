@@ -10,6 +10,52 @@ body {
     background-size: 20px 20px;
     background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
 }
+
+/* Dark mode preview area */
+.dark .preview-area {
+    background-image:
+        linear-gradient(45deg, #555 25%, transparent 25%),
+        linear-gradient(-45deg, #555 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #555 75%),
+        linear-gradient(-45deg, transparent 75%, #555 75%);
+}
+
+/* Theme toggle button styles */
+#themeToggle {
+    transition: all 0.3s ease;
+}
+
+#themeToggle:hover {
+    transform: scale(1.05);
+}
+
+/* Smooth transitions for theme changes */
+* {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Enhanced dark mode input styles */
+.dark input[type="color"]::-webkit-color-swatch {
+    border: 2px solid #4b5563;
+}
+
+/* Dark mode range slider styles */
+.dark input[type="range"]::-webkit-slider-track {
+    background: #4b5563;
+}
+
+.dark input[type="range"]::-webkit-slider-thumb {
+    background: #3b82f6;
+}
+
+.dark input[type="range"]::-moz-range-track {
+    background: #4b5563;
+}
+
+.dark input[type="range"]::-moz-range-thumb {
+    background: #3b82f6;
+    border: none;
+}
 #preview {
     position: relative; /* This is the key fix for guide positioning */
     background-color: #f0f0f0;
