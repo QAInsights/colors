@@ -1,171 +1,46 @@
+// main.js
+import { initializeTheme } from './modules/theme.js';
+import { state, updateState } from './modules/state.js';
+import { 
+    getCustomPresets, 
+    saveCustomPresets, 
+    addCustomPreset, 
+    removeCustomPreset, 
+    updateDimensionPresetOptions, 
+    applyDimensionPreset 
+} from './modules/dimensionPresets.js';
+import { 
+    getPatternSvgString, 
+    drawPattern, 
+    drawPatternToCanvas 
+} from './modules/patterns.js';
+import { 
+    updateTextPreview, 
+    centerText, 
+    repositionText, 
+    hideSnapGuides, 
+    drawTextToCanvas,
+    setupTextDragAndDrop
+} from './modules/textHandling.js';
+import { 
+    createHighResolutionCanvas, 
+    drawBackgroundToCanvas, 
+    triggerDownload, 
+    downloadHighResolutionImage, 
+    downloadRasterImage,
+    escapeHtml
+} from './modules/imageExport.js';
+import { 
+    updateControlVisibility, 
+    handleDimensionChange, 
+    applyZoom, 
+    handleImageUpload, 
+    renderGradientColorPickers, 
+    updatePreview,
+    getYear
+} from './modules/uiControls.js';
+
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Theme Management ---
-    const THEME_STORAGE_KEY = 'imageGenerator_theme';
-    
-    function initializeTheme() {
-        const themeToggle = document.getElementById('themeToggle');
-        const sunIcon = document.getElementById('sunIcon');
-        const moonIcon = document.getElementById('moonIcon');
-        
-        // Get saved theme or default to light
-        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
-        
-        // Apply theme
-        if (savedTheme === 'dark') {
-            document.documentElement.classList.add('dark');
-            sunIcon.classList.remove('hidden');
-            moonIcon.classList.add('hidden');
-        } else {
-            document.documentElement.classList.remove('dark');
-            sunIcon.classList.add('hidden');
-            moonIcon.classList.remove('hidden');
-        }
-        
-        // Theme toggle event listener
-        themeToggle.addEventListener('click', () => {
-            const isDark = document.documentElement.classList.contains('dark');
-            
-            if (isDark) {
-                // Switch to light mode
-                document.documentElement.classList.remove('dark');
-                sunIcon.classList.add('hidden');
-                moonIcon.classList.remove('hidden');
-                localStorage.setItem(THEME_STORAGE_KEY, 'light');
-            } else {
-                // Switch to dark mode
-                document.documentElement.classList.add('dark');
-                sunIcon.classList.remove('hidden');
-                moonIcon.classList.add('hidden');
-                localStorage.setItem(THEME_STORAGE_KEY, 'dark');
-            }
-        });
-    }
-
-    // --- State Management ---
-    let state = {
-        width: 1200,
-        height: 630,
-        bgType: 'color',
-        color1: '#3b82f6',
-        gradientColors: ['#8b5cf6', '#ec4899'],
-        gradientAngle: 90,
-        imageSrc: null,
-        text: 'Hello, World!',
-        fontFamily: 'Montserrat',
-        fontSize: 72,
-        textColor: '#ffffff',
-        textAlign: 'center',
-        textX: null,
-        textY: null,
-        pattern: 'none',
-        patternColor: '#ffffff',
-        patternOpacity: 0.2,
-        patternCount: 20,
-        borderRadius: 0,
-    };
-
-    // --- Dimension Preset Management ---
-    const STORAGE_KEY = 'imageGenerator_customPresets';
-    
-    function getCustomPresets() {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            return stored ? JSON.parse(stored) : [];
-        } catch (e) {
-            console.warn('Failed to load custom presets:', e);
-            return [];
-        }
-    }
-    
-    function saveCustomPresets(presets) {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
-        } catch (e) {
-            console.warn('Failed to save custom presets:', e);
-        }
-    }
-    
-    function addCustomPreset(width, height, name) {
-        const presets = getCustomPresets();
-        const newPreset = {
-            id: `custom_${Date.now()}`,
-            name: name || `Custom ${width}×${height}`,
-            width: parseInt(width),
-            height: parseInt(height),
-            value: `${width}x${height}`
-        };
-        
-        // Check if preset already exists
-        const exists = presets.find(p => p.width === newPreset.width && p.height === newPreset.height);
-        if (!exists) {
-            presets.push(newPreset);
-            saveCustomPresets(presets);
-            updateDimensionPresetOptions();
-            updatePreview();
-            updateTextPreview();
-            centerText();
-            updateControlVisibility();
-            renderGradientColorPickers();
-            return true;
-        }
-        return false;
-    }
-    
-    function removeCustomPreset(id) {
-        const presets = getCustomPresets().filter(p => p.id !== id);
-        saveCustomPresets(presets);
-        updateDimensionPresetOptions();
-    }
-    
-    function updateDimensionPresetOptions() {
-        const customPresets = getCustomPresets();
-        
-        // Remove existing custom options
-        const existingCustomOptions = dimensionPreset.querySelectorAll('option[data-custom="true"]');
-        existingCustomOptions.forEach(option => option.remove());
-        
-        // Add custom presets
-        if (customPresets.length > 0) {
-            let customGroup = dimensionPreset.querySelector('optgroup[label="Custom Presets"]');
-            if (!customGroup) {
-                customGroup = document.createElement('optgroup');
-                customGroup.label = 'Custom Presets';
-                dimensionPreset.insertBefore(customGroup, dimensionPreset.children[1]);
-            }
-            
-            customGroup.innerHTML = '';
-            customPresets.forEach(preset => {
-                const option = document.createElement('option');
-                option.value = preset.value;
-                option.textContent = `${preset.name} (${preset.width}×${preset.height})`;
-                option.setAttribute('data-custom', 'true');
-                option.setAttribute('data-preset-id', preset.id);
-                customGroup.appendChild(option);
-            });
-        } else {
-            // Remove empty custom group
-            const customGroup = dimensionPreset.querySelector('optgroup[label="Custom Presets"]');
-            if (customGroup) {
-                customGroup.remove();
-            }
-        }
-    }
-    
-    function applyDimensionPreset(value) {
-        if (value === 'custom') {
-            return; // Keep current dimensions
-        }
-        
-        const [width, height] = value.split('x').map(Number);
-        if (width && height) {
-            state.width = width;
-            state.height = height;
-            widthInput.value = width;
-            heightInput.value = height;
-            updatePreview();
-        }
-    }
-
     // --- DOM Element References ---
     const dimensionPreset = document.getElementById('dimensionPreset');
     const saveCustomPreset = document.getElementById('saveCustomPreset');
@@ -217,846 +92,239 @@ document.addEventListener('DOMContentLoaded', () => {
     const downloadPNG = document.getElementById('downloadPNG');
     const downloadJPG = document.getElementById('downloadJPG');
     const resolutionScale = document.getElementById('resolutionScale');
+    
+    const previewArea = document.querySelector('.preview-area');
+    const previewContainer = document.querySelector('.preview-container');
 
-    // --- Core Functions ---
-
-
-
-    // Apply zoom level to the preview area
-    function applyZoom() {
-        const previewArea = document.querySelector('.preview-area');
-        const previewContainer = document.querySelector('.preview-container');
-        const currentZoom = zoomLevel.value;
-        
-        if (currentZoom === 'fit') {
-            // Calculate the scale to fit the preview within the container
-            const containerWidth = previewContainer.clientWidth - 40; // Account for padding
-            const scale = Math.min(0.9, containerWidth / state.width); // Cap at 90% to avoid edge cases
-            
-            // Apply the calculated scale
-            previewArea.style.transform = `scale(${scale})`;
-            previewArea.style.transformOrigin = 'top center';
-        } else {
-            // Apply the selected zoom level
-            const zoom = parseFloat(currentZoom);
-            previewArea.style.transform = `scale(${zoom})`;
-            previewArea.style.transformOrigin = 'top center';
-        }
+    // Create UI elements object for passing to functions
+    const elements = {
+        preview,
+        patternSvg,
+        textPreview,
+        guideV,
+        guideH,
+        colorControls,
+        gradientControls,
+        imageControls,
+        patternOptions,
+        btnTypeColor,
+        btnTypeGradient,
+        btnTypeImage,
+        previewArea,
+        previewContainer,
+        zoomLevel
+    };
+    
+    // Wrapper functions that use the imported modules with the DOM elements
+    function updatePreviewWrapper() {
+        updatePreview(elements);
     }
     
-    function updatePreview() {
-        // Ensure outer container (preview-area) matches the requested dimensions so width is not clipped
-        const previewContainer = preview.parentElement;
-        if (previewContainer && previewContainer.classList.contains('preview-area')) {
-            // Set the dimensions of the preview area to match the canvas dimensions
-            previewContainer.style.width = `${state.width}px`;
-            previewContainer.style.height = `${state.height}px`;
-            previewContainer.style.overflow = 'visible';
-            previewContainer.style.margin = 'auto'; // Center the preview area
-        }
-        
-        // Apply the current zoom level
-        if (typeof applyZoom === 'function') {
-            applyZoom();
-        }
-        preview.style.width = `${state.width}px`;
-        preview.style.height = `${state.height}px`;
-        preview.style.borderRadius = `${state.borderRadius}px`;
-
-        // Ensure SVG canvas matches new dimensions
-        patternSvg.setAttribute('width', state.width);
-        patternSvg.setAttribute('height', state.height);
-        patternSvg.setAttribute('viewBox', `0 0 ${state.width} ${state.height}`);
-
-        // Clear previous background
-        preview.style.backgroundImage = 'none';
-        preview.style.backgroundColor = 'transparent';
-
-        switch (state.bgType) {
-            case 'color':
-                preview.style.backgroundColor = state.color1;
-                break;
-            case 'gradient':
-                if (state.gradientColors.length > 1) {
-                    preview.style.backgroundImage = `linear-gradient(${state.gradientAngle}deg, ${state.gradientColors.join(', ')})`;
-                }
-                break;
-            case 'image':
-                if (state.imageSrc) {
-                    preview.style.backgroundImage = `url(${state.imageSrc})`;
-                    preview.style.backgroundSize = 'cover';
-                    preview.style.backgroundPosition = 'center';
-                }
-                break;
-        }
-
-        drawPattern();
-        updateTextPreview();
-    }
-
-    function updateTextPreview() {
-        textPreview.innerText = state.text;
-        textPreview.style.fontFamily = `'${state.fontFamily}', sans-serif`;
-        textPreview.style.fontSize = `${state.fontSize}px`;
-        textPreview.style.color = state.textColor;
-        textPreview.style.textAlign = state.textAlign;
-    }
-
-    function centerText() {
-        // Get the actual dimensions of the preview and text
-        const previewWidth = parseInt(preview.style.width) || state.width;
-        const previewHeight = parseInt(preview.style.height) || state.height;
-        const textWidth = textPreview.offsetWidth;
-        const textHeight = textPreview.offsetHeight;
-        
-        // Calculate center position
-        state.textX = (previewWidth - textWidth) / 2;
-        state.textY = (previewHeight - textHeight) / 2;
-        
-        // Update the position
-        repositionText();
-        
-        // Show guides briefly to indicate centering
-        guideV.style.display = 'block';
-        guideH.style.display = 'block';
-        
-        // Hide guides after a short delay
-        setTimeout(hideSnapGuides, 800);
-    }
-
-    function repositionText() {
-        if (state.textX !== null && state.textY !== null) {
-            textPreview.style.left = `${state.textX}px`;
-            textPreview.style.top = `${state.textY}px`;
-        } else {
-            // If position is not set, ensure it's not absolutely positioned
-            textPreview.style.left = '';
-            textPreview.style.top = '';
-        }
-    }
-
-    function updateControlVisibility() {
-        colorControls.classList.add('hidden');
-        gradientControls.classList.add('hidden');
-        imageControls.classList.add('hidden');
-        
-        const controlMap = { color: colorControls, gradient: gradientControls, image: imageControls };
-        controlMap[state.bgType].classList.remove('hidden');
-
-        const btnMap = { color: btnTypeColor, gradient: btnTypeGradient, image: btnTypeImage };
-        Object.values(btnMap).forEach(btn => btn.classList.remove('bg-blue-500', 'text-white'));
-        btnMap[state.bgType].classList.add('bg-blue-500', 'text-white');
-
-        patternOptions.classList.toggle('hidden', state.pattern === 'none');
-    }
-
-    function handleImageUpload(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                state.imageSrc = event.target.result;
-                updatePreview();
-            };
-            reader.readAsDataURL(file);
-        }
+    function updateTextPreviewWrapper() {
+        updateTextPreview(textPreview);
     }
     
-    function triggerDownload(filename, dataUrl) {
-        const link = document.createElement('a');
-        link.href = dataUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    function escapeHtml(unsafe) {
-        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    function getPatternSvgString() {
-        let patternContent = '';
-        const { width, height, pattern, patternColor, patternOpacity, patternCount } = state;
-        let seed = 12345; // Fixed seed for consistent patterns
-        const random = () => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
-
-        if (pattern === 'blobs') {
-            for (let i = 0; i < patternCount; i++) {
-                const r = random() * 50 + 20;
-                const cx = random() * width;
-                const cy = random() * height;
-                patternContent += `<circle cx='${cx}' cy='${cy}' r='${r}' fill='${patternColor}' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'triangles') {
-            for (let i = 0; i < patternCount; i++) {
-                const size = random() * 80 + 20;
-                const x = random() * width;
-                const y = random() * height;
-                const angle = random() * 360;
-                patternContent += `<polygon points='${x},${y-size/2} ${x-size/2},${y+size/2} ${x+size/2},${y+size/2}' transform='rotate(${angle} ${x} ${y})' fill='${patternColor}' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'circles') {
-            for (let i = 0; i < patternCount; i++) {
-                const r = random() * 30 + 5;
-                const cx = random() * width;
-                const cy = random() * height;
-                patternContent += `<circle cx='${cx}' cy='${cy}' r='${r}' stroke='${patternColor}' stroke-width='2' fill='none' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'lines') {
-            for (let i = 0; i < patternCount; i++) {
-                const x1 = random() * width;
-                const y1 = random() * height;
-                const x2 = x1 + (random() - 0.5) * 200;
-                const y2 = y1 + (random() - 0.5) * 200;
-                patternContent += `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='${patternColor}' stroke-width='3' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        }
-        return patternContent;
-    }
-
-
-
-    function drawPattern() {
-        patternSvg.innerHTML = getPatternSvgString();
-    }
-
-    function renderGradientColorPickers() {
-        gradientColorsContainer.innerHTML = '';
-        state.gradientColors.forEach((color, index) => {
-            const colorPickerWrapper = document.createElement('div');
-            colorPickerWrapper.className = 'flex items-center gap-3';
-            
-            const colorInput = document.createElement('input');
-            colorInput.type = 'color';
-            colorInput.value = color;
-            colorInput.addEventListener('input', (e) => {
-                state.gradientColors[index] = e.target.value;
-                textInput.value = e.target.value;
-                updatePreview();
-            });
-
-            const textInput = document.createElement('input');
-            textInput.type = 'text';
-            textInput.value = color;
-            textInput.className = 'w-full p-3 bg-gray-100 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 border-transparent';
-            textInput.addEventListener('change', (e) => {
-                state.gradientColors[index] = e.target.value;
-                colorInput.value = e.target.value;
-                updatePreview();
-            });
-
-            colorPickerWrapper.appendChild(colorInput);
-            colorPickerWrapper.appendChild(textInput);
-            gradientColorsContainer.appendChild(colorPickerWrapper);
-        });
-
-        gradientColorCount.textContent = state.gradientColors.length;
-        removeGradientColor.disabled = state.gradientColors.length <= 2;
-        addGradientColor.disabled = state.gradientColors.length >= 5;
-    }
-
-    // --- Event Listeners ---
-
-    // Background
-
-    // Background
-    function handleDimensionChange() {
-        // Ensure positive integers
-        const newWidth = parseInt(widthInput.value, 10);
-        const newHeight = parseInt(heightInput.value, 10);
-        if (!isNaN(newWidth) && newWidth > 0) state.width = newWidth;
-        if (!isNaN(newHeight) && newHeight > 0) state.height = newHeight;
-        updatePreview();
-        // Update preset selection to custom when manually changing dimensions
-        if (dimensionPreset.value !== 'custom') {
-            const currentValue = `${state.width}x${state.height}`;
-
-            const matchingOption = Array.from(dimensionPreset.options).find(opt => opt.value === currentValue);
-            dimensionPreset.value = matchingOption ? currentValue : 'custom';
-        }
-    }
-
-    // Apply zoom level to the preview area
-    function applyZoom() {
-        const previewArea = document.querySelector('.preview-area');
-        const previewContainer = document.querySelector('.preview-container');
-        const currentZoom = zoomLevel.value;
-        
-        if (currentZoom === 'fit') {
-            // Calculate the scale to fit the preview within the container
-            const containerWidth = previewContainer.clientWidth - 40; // Account for padding
-            const scale = Math.min(0.9, containerWidth / state.width); // Cap at 90% to avoid edge cases
-            
-            // Apply the calculated scale
-            previewArea.style.transform = `scale(${scale})`;
-            previewArea.style.transformOrigin = 'top center';
-        } else {
-            // Apply the selected zoom level
-            const zoom = parseFloat(currentZoom);
-            previewArea.style.transform = `scale(${zoom})`;
-            previewArea.style.transformOrigin = 'top center';
-        }
+    function centerTextWrapper() {
+        centerText(preview, textPreview, guideV, guideH);
     }
     
-    function getPatternSvgString() {
-        let patternContent = '';
-        const { width, height, pattern, patternColor, patternOpacity, patternCount } = state;
-        let seed = 12345; // Fixed seed for consistent patterns
-        const random = () => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
-        
-        // Pattern generation logic based on selected pattern type
-        if (pattern === 'none') {
-            return '';
-        }
-        
-        if (pattern === 'blobs') {
-            for (let i = 0; i < patternCount; i++) {
-                const r = random() * 50 + 20;
-                const cx = random() * width;
-                const cy = random() * height;
-                patternContent += `<circle cx='${cx}' cy='${cy}' r='${r}' fill='${patternColor}' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'triangles') {
-            for (let i = 0; i < patternCount; i++) {
-                const size = random() * 80 + 20;
-                const x = random() * width;
-                const y = random() * height;
-                const angle = random() * 360;
-                patternContent += `<polygon points='${x},${y-size/2} ${x-size/2},${y+size/2} ${x+size/2},${y+size/2}' transform='rotate(${angle} ${x} ${y})' fill='${patternColor}' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'circles') {
-            for (let i = 0; i < patternCount; i++) {
-                const r = random() * 30 + 5;
-                const cx = random() * width;
-                const cy = random() * height;
-                patternContent += `<circle cx='${cx}' cy='${cy}' r='${r}' stroke='${patternColor}' stroke-width='2' fill='none' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        } else if (pattern === 'lines') {
-            for (let i = 0; i < patternCount; i++) {
-                const x1 = random() * width;
-                const y1 = random() * height;
-                const x2 = x1 + (random() - 0.5) * 200;
-                const y2 = y1 + (random() - 0.5) * 200;
-                patternContent += `<line x1='${x1}' y1='${y1}' x2='${x2}' y2='${y2}' stroke='${patternColor}' stroke-width='3' opacity='${patternOpacity * (random() * 0.5 + 0.5)}' />`;
-            }
-        }
-        
-        return patternContent;
-    }
-
-    // Event listeners will be set up in the initialize function
-
-    // Drag and Drop for Text
-    let isDragging = false;
-    let dragStartX, dragStartY, textStartX, textStartY;
-
-    function hideSnapGuides() {
-        guideV.style.display = 'none';
-        guideH.style.display = 'none';
-    }
-
-    function dragStart(e) {
-        isDragging = true;
-        textPreview.classList.add('dragging');
-        
-        // Get the starting position (handle both mouse and touch events)
-        dragStartX = e.clientX || (e.touches && e.touches[0].clientX);
-        dragStartY = e.clientY || (e.touches && e.touches[0].clientY);
-        
-        // Prevent default to avoid text selection during drag
-        e.preventDefault();
-        
-        // Add event listeners for move and end events
-        document.addEventListener('mousemove', dragMove);
-        document.addEventListener('mouseup', dragEnd);
-        document.addEventListener('touchmove', dragMove, { passive: false });
-        document.addEventListener('touchend', dragEnd);
-    }
-
-    function dragMove(e) {
-        if (!isDragging) return;
-        e.preventDefault();
-        
-        // Get event position (handle both mouse and touch)
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-        
-        // Calculate new position
-        let newX = state.textX + (clientX - dragStartX);
-        let newY = state.textY + (clientY - dragStartY);
-        
-        // Update drag start position for next move
-        dragStartX = clientX;
-        dragStartY = clientY;
-        
-        // Snap to guides logic
-        const snapThreshold = 10; // Slightly increased threshold for easier snapping
-        
-        // Get the actual dimensions of the preview and text
-        const previewWidth = parseInt(preview.style.width) || state.width;
-        const previewHeight = parseInt(preview.style.height) || state.height;
-        const textWidth = textPreview.offsetWidth;
-        const textHeight = textPreview.offsetHeight;
-
-        // Calculate text center position
-        const textCenterX = newX + textWidth / 2;
-        const textCenterY = newY + textHeight / 2;
-
-        // Calculate preview center
-        const previewCenterX = previewWidth / 2;
-        const previewCenterY = previewHeight / 2;
-
-        // Snap to vertical center (horizontal guide)
-        if (Math.abs(textCenterY - previewCenterY) < snapThreshold) {
-            newY = previewCenterY - (textHeight / 2);
-            guideH.style.display = 'block';
-        } else {
-            guideH.style.display = 'none';
-        }
-
-        // Snap to horizontal center (vertical guide)
-        if (Math.abs(textCenterX - previewCenterX) < snapThreshold) {
-            newX = previewCenterX - (textWidth / 2);
-            guideV.style.display = 'block';
-        } else {
-            guideV.style.display = 'none';
-        }
-
-        // Update state and reposition text
-        state.textX = newX;
-        state.textY = newY;
-        repositionText();
-    }
-
-    function dragEnd() {
-        if (!isDragging) return;
-        isDragging = false;
-        textPreview.classList.remove('dragging');
-        hideSnapGuides();
-        document.removeEventListener('mousemove', dragMove);
-        document.removeEventListener('mouseup', dragEnd);
-        document.removeEventListener('touchmove', dragMove);
-        document.removeEventListener('touchend', dragEnd);
-    }
-
-    // Text drag and drop event listeners moved to initialize function
-
-    // --- High-Resolution Canvas Download Logic ---
-    function createHighResolutionCanvas(scaleFactor = 4) {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Set canvas dimensions with scale factor for high resolution
-        canvas.width = state.width * scaleFactor;
-        canvas.height = state.height * scaleFactor;
-        
-        // Scale the context to match
-        ctx.scale(scaleFactor, scaleFactor);
-        
-        // Enable high-quality rendering
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.textRenderingOptimization = 'optimizeQuality';
-        
-        return { canvas, ctx, scaleFactor };
+    function updateControlVisibilityWrapper() {
+        updateControlVisibility(elements);
     }
     
-    function drawBackgroundToCanvas(ctx) {
-        const { width, height, bgType, color1, gradientColors, gradientAngle, imageSrc } = state;
-        
-        switch (bgType) {
-            case 'color':
-                ctx.fillStyle = color1;
-                ctx.fillRect(0, 0, width, height);
-                break;
-                
-            case 'gradient':
-                if (gradientColors.length > 1) {
-                    const angleRad = (gradientAngle * Math.PI) / 180;
-                    const x1 = width / 2 - Math.cos(angleRad) * width / 2;
-                    const y1 = height / 2 - Math.sin(angleRad) * height / 2;
-                    const x2 = width / 2 + Math.cos(angleRad) * width / 2;
-                    const y2 = height / 2 + Math.sin(angleRad) * height / 2;
-                    
-                    const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-                    gradientColors.forEach((color, index) => {
-                        gradient.addColorStop(index / (gradientColors.length - 1), color);
-                    });
-                    
-                    ctx.fillStyle = gradient;
-                    ctx.fillRect(0, 0, width, height);
-                }
-                break;
-                
-            case 'image':
-                if (imageSrc) {
-                    return new Promise((resolve) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            ctx.drawImage(img, 0, 0, width, height);
-                            resolve();
-                        };
-                        img.src = imageSrc;
-                    });
-                }
-                break;
-        }
-        
-        return Promise.resolve();
+    function handleDimensionChangeWrapper() {
+        handleDimensionChange(widthInput, heightInput, dimensionPreset, updatePreviewWrapper);
     }
     
-    function drawPatternToCanvas(ctx) {
-        const { width, height, pattern, patternColor, patternOpacity, patternCount } = state;
-        
-        if (pattern === 'none') return;
-        
-        let seed = 12345; // Fixed seed for consistent patterns
-        const random = () => {
-            const x = Math.sin(seed++) * 10000;
-            return x - Math.floor(x);
-        };
-        
-        ctx.globalAlpha = patternOpacity;
-        ctx.fillStyle = patternColor;
-        ctx.strokeStyle = patternColor;
-        
-        for (let i = 0; i < patternCount; i++) {
-            const opacity = patternOpacity * (random() * 0.5 + 0.5);
-            ctx.globalAlpha = opacity;
-            
-            switch (pattern) {
-                case 'blobs':
-                    const r = random() * 50 + 20;
-                    const cx = random() * width;
-                    const cy = random() * height;
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-                    ctx.fill();
-                    break;
-                    
-                case 'triangles':
-                    const size = random() * 80 + 20;
-                    const x = random() * width;
-                    const y = random() * height;
-                    const angle = random() * 360;
-                    
-                    ctx.save();
-                    ctx.translate(x, y);
-                    ctx.rotate((angle * Math.PI) / 180);
-                    ctx.beginPath();
-                    ctx.moveTo(0, -size/2);
-                    ctx.lineTo(-size/2, size/2);
-                    ctx.lineTo(size/2, size/2);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.restore();
-                    break;
-                    
-                case 'circles':
-                    const radius = random() * 30 + 5;
-                    const circleX = random() * width;
-                    const circleY = random() * height;
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(circleX, circleY, radius, 0, 2 * Math.PI);
-                    ctx.stroke();
-                    break;
-                    
-                case 'lines':
-                    const x1 = random() * width;
-                    const y1 = random() * height;
-                    const x2 = x1 + (random() - 0.5) * 200;
-                    const y2 = y1 + (random() - 0.5) * 200;
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.stroke();
-                    break;
-            }
-        }
-        
-        ctx.globalAlpha = 1; // Reset alpha
+    function renderGradientColorPickersWrapper() {
+        renderGradientColorPickers(gradientColorsContainer, gradientColorCount, removeGradientColor, addGradientColor, updatePreviewWrapper);
     }
     
-    function drawTextToCanvas(ctx, scaleFactor) {
-        const { text, fontFamily, fontSize, textColor, textAlign, textX, textY } = state;
-        
-        if (!text.trim()) return;
-        
-        // Set font - no need to scale since canvas context is already scaled
-        ctx.font = `${fontSize}px '${fontFamily}', sans-serif`;
-        ctx.fillStyle = textColor;
-        ctx.textBaseline = 'top';
-        
-        // Handle multi-line text
-        const lines = text.split('\n');
-        const lineHeight = fontSize * 1.2;
-        
-        // Measure line widths in original units (before scaling)
-        const lineWidths = lines.map(line => ctx.measureText(line).width / scaleFactor);
-        const maxLineWidth = Math.max(...lineWidths);
-
-        
-        // Calculate text position
-        let x, y;
-        
-        if (textX !== null && textY !== null) {
-            // For dragged text, textX and textY represent the position of the text container
-            // The text container has padding of 8px (p-2 in Tailwind CSS)
-            const textPadding = 8;
-            
-            // The actual text starts at textX + padding, textY + padding
-            // But we need to handle alignment within the container
-            
-            if (textAlign === 'left') {
-                x = textX + textPadding;
-                ctx.textAlign = 'left';
-            } else if (textAlign === 'right') {
-                // For right alignment, we need to find the right edge of the text container
-                // The container width is determined by the longest line plus padding
-                const maxLineWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
-                const containerWidth = maxLineWidth + (textPadding * 2);
-                x = textX + containerWidth - textPadding;
-                ctx.textAlign = 'right';
-            } else { // center
-                // For center alignment, find the center of the text container
-                const maxLineWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
-                const containerWidth = maxLineWidth + (textPadding * 2);
-                x = textX + containerWidth / 2;
-                ctx.textAlign = 'center';
-            }
-            
-            y = textY + textPadding;
-            
-            // Render each line using canvas built-in alignment
-            lines.forEach((line, index) => {
-                ctx.fillText(line, x, y + (index * lineHeight));
-            });
-            
-        } else {
-            // Auto-positioned text - calculate position based on alignment
-            const maxLineWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
-            const totalTextHeight = lines.length * lineHeight;
-            
-            // Calculate base position and set canvas alignment
-            ctx.textAlign = textAlign;
-            
-            switch (textAlign) {
-                case 'left':
-                    x = 20;
-                    break;
-                case 'right':
-                    x = state.width - 20;
-                    break;
-                case 'center':
-                default:
-                    x = state.width / 2;
-                    break;
-            }
-            
-            y = (state.height - totalTextHeight) / 2;
-            
-            // Render each line using canvas built-in alignment
-            lines.forEach((line, index) => {
-                ctx.fillText(line, x, y + (index * lineHeight));
-            });
-        }
-        
-        // Reset text alignment to avoid affecting other canvas operations
-        ctx.textAlign = 'start';
+    function drawPatternWrapper() {
+        drawPattern(patternSvg);
     }
     
-    async function downloadHighResolutionImage(format = 'png', scaleFactor = 4) {
-        const { canvas, ctx } = createHighResolutionCanvas(scaleFactor);
-        
-        try {
-            // Draw background
-            await drawBackgroundToCanvas(ctx);
-            
-            // Draw pattern
-            drawPatternToCanvas(ctx);
-            
-            // Draw text
-            drawTextToCanvas(ctx, scaleFactor);
-            
-            // Apply border radius if needed
-            if (state.borderRadius > 0) {
-                const tempCanvas = document.createElement('canvas');
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCanvas.width = canvas.width;
-                tempCanvas.height = canvas.height;
-                
-                // Create rounded rectangle mask
-                const radius = state.borderRadius * scaleFactor;
-                tempCtx.beginPath();
-                tempCtx.roundRect(0, 0, canvas.width, canvas.height, radius);
-                tempCtx.clip();
-                
-                // Draw the original canvas onto the masked canvas
-                tempCtx.drawImage(canvas, 0, 0);
-                
-                // Use the masked canvas for download
-                const mimeType = `image/${format}`;
-                const quality = format === 'jpeg' ? 0.95 : 1.0;
-                const dataUrl = tempCanvas.toDataURL(mimeType, quality);
-                const filename = `high-res-image-${state.width}x${state.height}-${scaleFactor}x.${format}`;
-                triggerDownload(filename, dataUrl);
-            } else {
-                // No border radius, use original canvas
-                const mimeType = `image/${format}`;
-                const quality = format === 'jpeg' ? 0.95 : 1.0;
-                const dataUrl = canvas.toDataURL(mimeType, quality);
-                const filename = `high-res-image-${state.width}x${state.height}-${scaleFactor}x.${format}`;
-                triggerDownload(filename, dataUrl);
-            }
-            
-        } catch (error) {
-            console.error('Error generating high-resolution image:', error);
-            alert('Error generating high-resolution image. Please try again.');
-        }
+    function applyDimensionPresetWrapper(value) {
+        applyDimensionPreset(value, widthInput, heightInput, updatePreviewWrapper);
     }
     
-    // Fallback function using html2canvas for compatibility
-    function downloadRasterImage(format = 'png') {
-        // Temporarily remove text drag handles for clean capture
-        textPreview.style.cursor = 'default';
-        
-        html2canvas(preview, {
-            backgroundColor: null, // Use transparent background
-            logging: false,
-            useCORS: true,
-            scale: 2 // Increase resolution
-        }).then(canvas => {
-            const mimeType = `image/${format}`;
-            const dataUrl = canvas.toDataURL(mimeType, format === 'jpeg' ? 0.9 : 1.0);
-            const filename = `image-${state.width}x${state.height}.${format}`;
-            triggerDownload(filename, dataUrl);
-
-            // Restore text drag handles
-            textPreview.style.cursor = 'grab';
-        });
+    function updateDimensionPresetOptionsWrapper() {
+        updateDimensionPresetOptions(dimensionPreset);
     }
-
-    // Download button event listeners moved to initialize function
+    
+    function addCustomPresetWrapper(width, height, name) {
+        const success = addCustomPreset(width, height, name);
+        if (success) {
+            updateDimensionPresetOptionsWrapper();
+            updatePreviewWrapper();
+            updateTextPreviewWrapper();
+            centerTextWrapper();
+            updateControlVisibilityWrapper();
+            renderGradientColorPickersWrapper();
+        }
+        return success;
+    }
+    
+    function handleImageUploadWrapper(e) {
+        handleImageUpload(e, updatePreviewWrapper);
+    }
     
     // --- Initial Setup ---
     function initialize() {
         // Load custom presets
-        updateDimensionPresetOptions();
+        updateDimensionPresetOptionsWrapper();
         
         // Add event listener for zoom level changes
         if (zoomLevel) {
-            zoomLevel.addEventListener('change', applyZoom);
+            zoomLevel.addEventListener('change', () => applyZoom(zoomLevel.value, previewArea, previewContainer));
         }
         
         // Background type selection
         btnTypeColor.addEventListener('click', () => {
-            state.bgType = 'color';
-            btnTypeColor.classList.add('bg-blue-500', 'text-white');
-            btnTypeGradient.classList.remove('bg-blue-500', 'text-white');
-            btnTypeImage.classList.remove('bg-blue-500', 'text-white');
-            updateControlVisibility();
-            updatePreview();
+            updateState({ bgType: 'color' });
+            updateControlVisibilityWrapper();
+            updatePreviewWrapper();
         });
         
         btnTypeGradient.addEventListener('click', () => {
-            state.bgType = 'gradient';
-            btnTypeGradient.classList.add('bg-blue-500', 'text-white');
-            btnTypeColor.classList.remove('bg-blue-500', 'text-white');
-            btnTypeImage.classList.remove('bg-blue-500', 'text-white');
-            updateControlVisibility();
-            updatePreview();
+            updateState({ bgType: 'gradient' });
+            updateControlVisibilityWrapper();
+            updatePreviewWrapper();
         });
         
         btnTypeImage.addEventListener('click', () => {
-            state.bgType = 'image';
-            btnTypeImage.classList.add('bg-blue-500', 'text-white');
-            btnTypeColor.classList.remove('bg-blue-500', 'text-white');
-            btnTypeGradient.classList.remove('bg-blue-500', 'text-white');
-            updateControlVisibility();
-            updatePreview();
+            updateState({ bgType: 'image' });
+            updateControlVisibilityWrapper();
+            updatePreviewWrapper();
         });
         
         // Background color
-        color1Input.addEventListener('input', (e) => { state.color1 = e.target.value; color1Text.value = e.target.value; updatePreview(); });
-        color1Text.addEventListener('change', (e) => { state.color1 = e.target.value; color1Input.value = e.target.value; updatePreview(); });
+        color1Input.addEventListener('input', (e) => { 
+            updateState({ color1: e.target.value }); 
+            color1Text.value = e.target.value; 
+            updatePreviewWrapper(); 
+        });
+        
+        color1Text.addEventListener('change', (e) => { 
+            updateState({ color1: e.target.value }); 
+            color1Input.value = e.target.value; 
+            updatePreviewWrapper(); 
+        });
         
         // Gradient direction
-        gradientDirection.addEventListener('input', (e) => { state.gradientAngle = parseInt(e.target.value, 10); updatePreview(); });
+        gradientDirection.addEventListener('input', (e) => { 
+            updateState({ gradientAngle: parseInt(e.target.value, 10) }); 
+            updatePreviewWrapper(); 
+        });
         
         // Image upload
-        imageUpload.addEventListener('change', handleImageUpload);
+        imageUpload.addEventListener('change', handleImageUploadWrapper);
         
         // Dimension inputs
-        widthInput.addEventListener('change', handleDimensionChange);
-        heightInput.addEventListener('change', handleDimensionChange);
+        widthInput.addEventListener('change', handleDimensionChangeWrapper);
+        heightInput.addEventListener('change', handleDimensionChangeWrapper);
         
         // Event listeners for gradient colors
         addGradientColor.addEventListener('click', () => {
             if (state.gradientColors.length < 5) {
-                state.gradientColors.push('#ffffff'); // Add white as default
-                renderGradientColorPickers();
-                updatePreview();
+                const newColors = [...state.gradientColors, '#ffffff'];
+                updateState({ gradientColors: newColors });
+                renderGradientColorPickersWrapper();
+                updatePreviewWrapper();
             }
         });
         
         removeGradientColor.addEventListener('click', () => {
             if (state.gradientColors.length > 2) {
-                state.gradientColors.pop();
-                renderGradientColorPickers();
-                updatePreview();
+                const newColors = [...state.gradientColors];
+                newColors.pop();
+                updateState({ gradientColors: newColors });
+                renderGradientColorPickersWrapper();
+                updatePreviewWrapper();
             }
         });
         
         // Text
-        textContent.addEventListener('input', (e) => { state.text = e.target.value; updatePreview(); });
-        fontFamily.addEventListener('change', (e) => { state.fontFamily = e.target.value; updatePreview(); });
-        fontSize.addEventListener('input', (e) => { 
-            state.fontSize = parseInt(e.target.value, 10); 
-            fontSizeValue.textContent = `${state.fontSize}px`;
-            updatePreview();
-            centerText(); // Re-center text when font size changes
+        textContent.addEventListener('input', (e) => { 
+            updateState({ text: e.target.value }); 
+            updatePreviewWrapper(); 
         });
-        textColor.addEventListener('input', (e) => { state.textColor = e.target.value; textColorText.value = e.target.value; updatePreview(); });
-        textColorText.addEventListener('change', (e) => { state.textColor = e.target.value; textColor.value = e.target.value; updatePreview(); });
+        
+        fontFamily.addEventListener('change', (e) => { 
+            updateState({ fontFamily: e.target.value }); 
+            updatePreviewWrapper(); 
+        });
+        
+        fontSize.addEventListener('input', (e) => { 
+            updateState({ fontSize: parseInt(e.target.value, 10) }); 
+            fontSizeValue.textContent = `${state.fontSize}px`;
+            updatePreviewWrapper();
+            centerTextWrapper(); // Re-center text when font size changes
+        });
+        
+        textColor.addEventListener('input', (e) => { 
+            updateState({ textColor: e.target.value }); 
+            textColorText.value = e.target.value; 
+            updatePreviewWrapper(); 
+        });
+        
+        textColorText.addEventListener('change', (e) => { 
+            updateState({ textColor: e.target.value }); 
+            textColor.value = e.target.value; 
+            updatePreviewWrapper(); 
+        });
+        
         textAlignContainer.addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON') {
-                state.textAlign = e.target.dataset.align;
+                updateState({ textAlign: e.target.dataset.align });
                 document.querySelectorAll('#textAlign button').forEach(btn => btn.classList.remove('bg-blue-500', 'text-white'));
                 e.target.classList.add('bg-blue-500', 'text-white');
-                updatePreview();
+                updatePreviewWrapper();
             }
         });
         
         // Pattern
-        patternType.addEventListener('change', (e) => { state.pattern = e.target.value; updatePreview(); updateControlVisibility(); });
-        patternColor.addEventListener('input', (e) => { state.patternColor = e.target.value; patternColorText.value = e.target.value; drawPattern(); });
-        patternColorText.addEventListener('change', (e) => { state.patternColor = e.target.value; patternColor.value = e.target.value; drawPattern(); });
-        patternOpacity.addEventListener('input', (e) => { state.patternOpacity = parseFloat(e.target.value); drawPattern(); });
-        patternCount.addEventListener('input', (e) => { state.patternCount = parseInt(e.target.value, 10); drawPattern(); });
+        patternType.addEventListener('change', (e) => { 
+            updateState({ pattern: e.target.value }); 
+            updatePreviewWrapper(); 
+            updateControlVisibilityWrapper(); 
+        });
+        
+        patternColor.addEventListener('input', (e) => { 
+            updateState({ patternColor: e.target.value }); 
+            patternColorText.value = e.target.value; 
+            drawPatternWrapper(); 
+        });
+        
+        patternColorText.addEventListener('change', (e) => { 
+            updateState({ patternColor: e.target.value }); 
+            patternColor.value = e.target.value; 
+            drawPatternWrapper(); 
+        });
+        
+        patternOpacity.addEventListener('input', (e) => { 
+            updateState({ patternOpacity: parseFloat(e.target.value) }); 
+            drawPatternWrapper(); 
+        });
+        
+        patternCount.addEventListener('input', (e) => { 
+            updateState({ patternCount: parseInt(e.target.value, 10) }); 
+            drawPatternWrapper(); 
+        });
         
         // Border radius
         borderRadius.addEventListener('input', (e) => { 
-            state.borderRadius = parseInt(e.target.value, 10); 
+            updateState({ borderRadius: parseInt(e.target.value, 10) }); 
             borderRadiusValue.textContent = `${state.borderRadius}px`;
-            updatePreview(); 
+            updatePreviewWrapper(); 
         });
         
-        // Text drag and drop
-        textPreview.addEventListener('mousedown', dragStart);
-        textPreview.addEventListener('touchstart', dragStart, { passive: false });
+        // Setup text drag and drop
+        setupTextDragAndDrop(textPreview, preview, guideV, guideH);
         
         // Dimension Presets
         dimensionPreset.addEventListener('change', (e) => {
-            applyDimensionPreset(e.target.value);
+            applyDimensionPresetWrapper(e.target.value);
         });
         
         saveCustomPreset.addEventListener('click', () => {
@@ -1070,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const name = prompt(`Enter a name for this preset (${width}×${height}):`, `Custom ${width}×${height}`);
             if (name !== null) { // User didn't cancel
-                const success = addCustomPreset(width, height, name.trim() || undefined);
+                const success = addCustomPresetWrapper(width, height, name.trim() || undefined);
                 if (success) {
                     // Select the newly created preset
                     dimensionPreset.value = `${width}x${height}`;
@@ -1101,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const scaleFactor = parseInt(resolutionScale.value);
             downloadHighResolutionImage('png', scaleFactor);
         });
+        
         downloadJPG.addEventListener('click', () => {
             const scaleFactor = parseInt(resolutionScale.value);
             downloadHighResolutionImage('jpeg', scaleFactor);
@@ -1131,10 +400,10 @@ document.addEventListener('DOMContentLoaded', () => {
         borderRadius.value = state.borderRadius;
         borderRadiusValue.textContent = `${state.borderRadius}px`;
 
-        renderGradientColorPickers();
-        updateControlVisibility();
-        updatePreview();
-        centerText();
+        renderGradientColorPickersWrapper();
+        updateControlVisibilityWrapper();
+        updatePreviewWrapper();
+        centerTextWrapper();
     }
 
     // Wait for fonts to be ready before initializing to ensure correct text dimensions
@@ -1146,7 +415,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Get current year
     document.getElementById("year").innerHTML = getYear();
 });
-
-function getYear() {
-    return new Date().getFullYear();
-}
