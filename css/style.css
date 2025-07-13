@@ -124,3 +124,7 @@ input[type="color"]::-webkit-color-swatch {
     height: 100%;
     pointer-events: none;
 }
+
+.footer {
+    text-align: center;
+}

@@ -653,4 +653,11 @@ document.addEventListener('DOMContentLoaded', () => {
         initializeTheme();
         initialize();
     });
+
+    // Get current year
+    document.getElementById("year").innerHTML = getYear();
 });
+
+function getYear() {
+    return new Date().getFullYear();
+}
