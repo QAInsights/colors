@@ -234,10 +234,25 @@
                 <!-- Download Buttons -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                     <h2 class="text-2xl font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">Download</h2>
+                    
+                    <!-- Resolution Selection -->
+                    <div class="mb-4">
+                        <label for="resolutionScale" class="font-medium text-gray-700 dark:text-gray-300">Resolution Quality</label>
+                        <select id="resolutionScale" class="w-full mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 border-transparent appearance-none">
+                            <option value="1">Standard (1x) - Web Quality</option>
+                            <option value="2">High (2x) - Print Quality</option>
+                            <option value="4" selected>Ultra High (4x) - Professional</option>
+                            <option value="6">Maximum (6x) - Ultra Professional</option>
+                        </select>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Higher resolution = larger file size but better quality
+                        </div>
+                    </div>
+                    
                     <div id="download-options" class="mt-6 flex justify-center gap-4">
-                    <button id="downloadPNG" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Download PNG</button>
-                    <button id="downloadJPG" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Download JPG</button>
-                </div>
+                        <button id="downloadPNG" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Download PNG</button>
+                        <button id="downloadJPG" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg">Download JPG</button>
+                    </div>
                 </div>
             </div>
 

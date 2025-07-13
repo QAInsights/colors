@@ -210,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const downloadPNG = document.getElementById('downloadPNG');
     const downloadJPG = document.getElementById('downloadJPG');
+    const resolutionScale = document.getElementById('resolutionScale');
 
     // --- Core Functions ---
 
@@ -603,7 +604,277 @@ document.addEventListener('DOMContentLoaded', () => {
     textPreview.addEventListener('mousedown', dragStart);
     textPreview.addEventListener('touchstart', dragStart, { passive: false });
 
-    // --- Download Logic ---
+    // --- High-Resolution Canvas Download Logic ---
+    function createHighResolutionCanvas(scaleFactor = 4) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas dimensions with scale factor for high resolution
+        canvas.width = state.width * scaleFactor;
+        canvas.height = state.height * scaleFactor;
+        
+        // Scale the context to match
+        ctx.scale(scaleFactor, scaleFactor);
+        
+        // Enable high-quality rendering
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.textRenderingOptimization = 'optimizeQuality';
+        
+        return { canvas, ctx, scaleFactor };
+    }
+    
+    function drawBackgroundToCanvas(ctx) {
+        const { width, height, bgType, color1, gradientColors, gradientAngle, imageSrc } = state;
+        
+        switch (bgType) {
+            case 'color':
+                ctx.fillStyle = color1;
+                ctx.fillRect(0, 0, width, height);
+                break;
+                
+            case 'gradient':
+                if (gradientColors.length > 1) {
+                    const angleRad = (gradientAngle * Math.PI) / 180;
+                    const x1 = width / 2 - Math.cos(angleRad) * width / 2;
+                    const y1 = height / 2 - Math.sin(angleRad) * height / 2;
+                    const x2 = width / 2 + Math.cos(angleRad) * width / 2;
+                    const y2 = height / 2 + Math.sin(angleRad) * height / 2;
+                    
+                    const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+                    gradientColors.forEach((color, index) => {
+                        gradient.addColorStop(index / (gradientColors.length - 1), color);
+                    });
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(0, 0, width, height);
+                }
+                break;
+                
+            case 'image':
+                if (imageSrc) {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            ctx.drawImage(img, 0, 0, width, height);
+                            resolve();
+                        };
+                        img.src = imageSrc;
+                    });
+                }
+                break;
+        }
+        
+        return Promise.resolve();
+    }
+    
+    function drawPatternToCanvas(ctx) {
+        const { width, height, pattern, patternColor, patternOpacity, patternCount } = state;
+        
+        if (pattern === 'none') return;
+        
+        let seed = 12345; // Fixed seed for consistent patterns
+        const random = () => {
+            const x = Math.sin(seed++) * 10000;
+            return x - Math.floor(x);
+        };
+        
+        ctx.globalAlpha = patternOpacity;
+        ctx.fillStyle = patternColor;
+        ctx.strokeStyle = patternColor;
+        
+        for (let i = 0; i < patternCount; i++) {
+            const opacity = patternOpacity * (random() * 0.5 + 0.5);
+            ctx.globalAlpha = opacity;
+            
+            switch (pattern) {
+                case 'blobs':
+                    const r = random() * 50 + 20;
+                    const cx = random() * width;
+                    const cy = random() * height;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+                    ctx.fill();
+                    break;
+                    
+                case 'triangles':
+                    const size = random() * 80 + 20;
+                    const x = random() * width;
+                    const y = random() * height;
+                    const angle = random() * 360;
+                    
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate((angle * Math.PI) / 180);
+                    ctx.beginPath();
+                    ctx.moveTo(0, -size/2);
+                    ctx.lineTo(-size/2, size/2);
+                    ctx.lineTo(size/2, size/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                    break;
+                    
+                case 'circles':
+                    const radius = random() * 30 + 5;
+                    const circleX = random() * width;
+                    const circleY = random() * height;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(circleX, circleY, radius, 0, 2 * Math.PI);
+                    ctx.stroke();
+                    break;
+                    
+                case 'lines':
+                    const x1 = random() * width;
+                    const y1 = random() * height;
+                    const x2 = x1 + (random() - 0.5) * 200;
+                    const y2 = y1 + (random() - 0.5) * 200;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                    break;
+            }
+        }
+        
+        ctx.globalAlpha = 1; // Reset alpha
+    }
+    
+    function drawTextToCanvas(ctx, scaleFactor) {
+        const { text, fontFamily, fontSize, textColor, textAlign, textX, textY } = state;
+        
+        if (!text.trim()) return;
+        
+        // Set font with scaled size for high resolution
+        ctx.font = `${fontSize}px '${fontFamily}', sans-serif`;
+        ctx.fillStyle = textColor;
+        ctx.textBaseline = 'top';
+        
+        // Handle multi-line text
+        const lines = text.split('\n');
+        const lineHeight = fontSize * 1.2;
+        
+        // Calculate text position
+        let x, y;
+        
+        if (textX !== null && textY !== null) {
+            // Use custom position if text was dragged - preserve exact positioning
+            x = textX;
+            y = textY;
+            
+            // For dragged text, render each line with the same alignment as preview
+            lines.forEach((line, index) => {
+                let lineX = x;
+                
+                // Apply alignment for each line when text was dragged
+                if (textAlign === 'center') {
+                    const lineMetrics = ctx.measureText(line);
+                    const lineWidth = lineMetrics.width;
+                    // Get the width of the longest line to maintain consistent centering
+                    const maxLineWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
+                    lineX = x + (maxLineWidth - lineWidth) / 2;
+                } else if (textAlign === 'right') {
+                    const lineMetrics = ctx.measureText(line);
+                    const lineWidth = lineMetrics.width;
+                    const maxLineWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
+                    lineX = x + (maxLineWidth - lineWidth);
+                }
+                
+                ctx.fillText(line, lineX, y + (index * lineHeight));
+            });
+        } else {
+            // Auto-positioned text - calculate position based on alignment
+            const maxLineWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+            const totalTextHeight = lines.length * lineHeight;
+            
+            // Calculate base position
+            switch (textAlign) {
+                case 'left':
+                    x = 20;
+                    break;
+                case 'right':
+                    x = state.width - maxLineWidth - 20;
+                    break;
+                case 'center':
+                default:
+                    x = (state.width - maxLineWidth) / 2;
+                    break;
+            }
+            
+            y = (state.height - totalTextHeight) / 2;
+            
+            // Render each line with proper alignment
+            lines.forEach((line, index) => {
+                let lineX = x;
+                
+                if (textAlign === 'center') {
+                    const lineMetrics = ctx.measureText(line);
+                    const lineWidth = lineMetrics.width;
+                    lineX = x + (maxLineWidth - lineWidth) / 2;
+                } else if (textAlign === 'right') {
+                    const lineMetrics = ctx.measureText(line);
+                    const lineWidth = lineMetrics.width;
+                    lineX = x + (maxLineWidth - lineWidth);
+                }
+                
+                ctx.fillText(line, lineX, y + (index * lineHeight));
+            });
+        }
+    }
+    
+    async function downloadHighResolutionImage(format = 'png', scaleFactor = 4) {
+        const { canvas, ctx } = createHighResolutionCanvas(scaleFactor);
+        
+        try {
+            // Draw background
+            await drawBackgroundToCanvas(ctx);
+            
+            // Draw pattern
+            drawPatternToCanvas(ctx);
+            
+            // Draw text
+            drawTextToCanvas(ctx, scaleFactor);
+            
+            // Apply border radius if needed
+            if (state.borderRadius > 0) {
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                
+                // Create rounded rectangle mask
+                const radius = state.borderRadius * scaleFactor;
+                tempCtx.beginPath();
+                tempCtx.roundRect(0, 0, canvas.width, canvas.height, radius);
+                tempCtx.clip();
+                
+                // Draw the original canvas onto the masked canvas
+                tempCtx.drawImage(canvas, 0, 0);
+                
+                // Use the masked canvas for download
+                const mimeType = `image/${format}`;
+                const quality = format === 'jpeg' ? 0.95 : 1.0;
+                const dataUrl = tempCanvas.toDataURL(mimeType, quality);
+                const filename = `high-res-image-${state.width}x${state.height}-${scaleFactor}x.${format}`;
+                triggerDownload(filename, dataUrl);
+            } else {
+                // No border radius, use original canvas
+                const mimeType = `image/${format}`;
+                const quality = format === 'jpeg' ? 0.95 : 1.0;
+                const dataUrl = canvas.toDataURL(mimeType, quality);
+                const filename = `high-res-image-${state.width}x${state.height}-${scaleFactor}x.${format}`;
+                triggerDownload(filename, dataUrl);
+            }
+            
+        } catch (error) {
+            console.error('Error generating high-resolution image:', error);
+            alert('Error generating high-resolution image. Please try again.');
+        }
+    }
+    
+    // Fallback function using html2canvas for compatibility
     function downloadRasterImage(format = 'png') {
         // Temporarily remove text drag handles for clean capture
         textPreview.style.cursor = 'default';
@@ -616,15 +887,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }).then(canvas => {
             const mimeType = `image/${format}`;
             const dataUrl = canvas.toDataURL(mimeType, format === 'jpeg' ? 0.9 : 1.0);
-            triggerDownload(`image.${format}`, dataUrl);
+            const filename = `image-${state.width}x${state.height}.${format}`;
+            triggerDownload(filename, dataUrl);
 
             // Restore text drag handles
             textPreview.style.cursor = 'grab';
         });
     }
 
-    downloadPNG.addEventListener('click', () => downloadRasterImage('png'));
-    downloadJPG.addEventListener('click', () => downloadRasterImage('jpg'));
+    // Event listeners for download buttons
+    downloadPNG.addEventListener('click', () => {
+        const scaleFactor = parseInt(resolutionScale.value);
+        downloadHighResolutionImage('png', scaleFactor);
+    });
+    downloadJPG.addEventListener('click', () => {
+        const scaleFactor = parseInt(resolutionScale.value);
+        downloadHighResolutionImage('jpeg', scaleFactor);
+    });
 
     // --- Initial Setup ---
     function initialize() {
