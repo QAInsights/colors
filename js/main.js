@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         patternColor: '#ffffff',
         patternOpacity: 0.2,
         patternCount: 20,
+        borderRadius: 0,
     };
 
     // --- Dimension Preset Management ---
@@ -204,6 +205,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const patternOpacity = document.getElementById('patternOpacity');
     const patternCount = document.getElementById('patternCount');
 
+    const borderRadius = document.getElementById('borderRadius');
+    const borderRadiusValue = document.getElementById('borderRadiusValue');
+
     const downloadPNG = document.getElementById('downloadPNG');
     const downloadJPG = document.getElementById('downloadJPG');
 
@@ -214,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updatePreview() {
         preview.style.width = `${state.width}px`;
         preview.style.height = `${state.height}px`;
+        preview.style.borderRadius = `${state.borderRadius}px`;
 
         // Clear previous background
         preview.style.backgroundImage = 'none';
@@ -510,6 +515,13 @@ document.addEventListener('DOMContentLoaded', () => {
     patternOpacity.addEventListener('input', (e) => { state.patternOpacity = parseFloat(e.target.value); drawPattern(); });
     patternCount.addEventListener('input', (e) => { state.patternCount = parseInt(e.target.value, 10); drawPattern(); });
 
+    // Border Radius
+    borderRadius.addEventListener('input', (e) => { 
+        state.borderRadius = parseInt(e.target.value, 10); 
+        borderRadiusValue.textContent = `${e.target.value}px`;
+        updatePreview(); 
+    });
+
     // Drag and Drop for Text
     let isDragging = false;
     let dragStartX, dragStartY, textStartX, textStartY;
@@ -641,6 +653,8 @@ document.addEventListener('DOMContentLoaded', () => {
         patternColorText.value = state.patternColor;
         patternOpacity.value = state.patternOpacity;
         patternCount.value = state.patternCount;
+        borderRadius.value = state.borderRadius;
+        borderRadiusValue.textContent = `${state.borderRadius}px`;
 
         renderGradientColorPickers();
         updateControlVisibility();
