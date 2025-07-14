@@ -69,13 +69,13 @@
                                     <option value="600x400">Card Image (600×400)</option>
                                     <option value="400x300">Thumbnail (400×300)</option>
                                 </optgroup>
-                                <optgroup label="Print & Marketing">
+                                <!-- <optgroup label="Print & Marketing">
                                     <option value="2550x3300">A4 Portrait (2550×3300)</option>
                                     <option value="3300x2550">A4 Landscape (3300×2550)</option>
                                     <option value="1800x1200">Poster 3:2 (1800×1200)</option>
                                     <option value="1600x900">Banner 16:9 (1600×900)</option>
                                     <option value="800x800">Square Banner (800×800)</option>
-                                </optgroup>
+                                </optgroup> -->
                             </select>
                             <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                 <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,11 +266,11 @@
                                 <option value="0.25">25% zoom</option>
                                 <option value="0.5">50% zoom</option>
                                 <option value="0.75">75% zoom</option>
-                                <option value="1" selected>100% zoom</option>
+                                <option value="1">100% zoom</option>
                                 <option value="1.25">125% zoom</option>
                                 <option value="1.5">150% zoom</option>
                                 <option value="2">200% zoom</option>
-                                <option value="fit">Fit to screen</option>
+                                <option value="fit" selected>Fit to screen</option>
                             </select>
                             <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,7 +280,7 @@
                         </div>
                     </div>
                     <!-- Preview Container -->
-                    <div class="preview-container" style="max-height: calc(100vh - 250px); overflow: auto;">
+                    <div class="preview-container" style="max-height: calc(100vh - 250px); overflow: hidden; display: flex; justify-content: center; align-items: center;">
                         <div class="preview-area rounded-lg">
                             <div id="preview" class="shadow-2xl relative">
                                 <svg id="pattern-svg"></svg>

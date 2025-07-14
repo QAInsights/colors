@@ -65,21 +65,80 @@ function handleDimensionChange(widthInput, heightInput, dimensionPreset, updateP
  * @param {HTMLElement} previewContainer - Preview container element
  */
 function applyZoom(zoomValue, previewArea, previewContainer) {
+    // Get the actual preview element that contains the content
+    const preview = document.getElementById('preview');
     const currentZoom = zoomValue;
+    
+    // Get accurate container dimensions using getBoundingClientRect for better precision
+    const containerRect = previewContainer.getBoundingClientRect();
+    
+    // Account for padding, margins, and UI elements - more generous spacing for Instagram dimensions
+    const horizontalPadding = 80; // Increased padding for better spacing
+    const verticalPadding = 100;  // Extra vertical padding for tall Instagram formats
+    
+    const containerWidth = Math.max(containerRect.width - horizontalPadding, 200); // Minimum 200px width
+    const containerHeight = Math.max(containerRect.height - verticalPadding, 200); // Minimum 200px height
     
     if (currentZoom === 'fit') {
         // Calculate the scale to fit the preview within the container
-        const containerWidth = previewContainer.clientWidth - 40; // Account for padding
-        const scale = Math.min(0.9, containerWidth / state.width); // Cap at 90% to avoid edge cases
+        const scaleWidth = containerWidth / state.width;
+        const scaleHeight = containerHeight / state.height;
         
-        // Apply the calculated scale
-        previewArea.style.transform = `scale(${scale})`;
-        previewArea.style.transformOrigin = 'top center';
+        // Use the smaller scale to ensure full visibility
+        let scale = Math.min(scaleWidth, scaleHeight);
+        
+        // For Instagram dimensions, ensure minimum readable size
+        const minScale = 0.1; // Minimum 10% scale
+        const maxScale = 1.0;  // Maximum 100% scale for crisp display
+        
+        scale = Math.max(minScale, Math.min(scale, maxScale));
+        
+        // Apply the calculated scale to the actual preview element
+        if (preview) {
+            preview.style.transform = `scale(${scale})`;
+            preview.style.transformOrigin = 'center center';
+        }
+        
+        // For 'fit' mode, we should always hide scrollbars as the content fits
+        previewContainer.style.overflow = 'hidden';
+        
+        // Remove max-height constraint to allow full visibility of scaled content
+        previewContainer.style.maxHeight = 'none';
+        
+        // Center the preview in the container
+        previewContainer.style.display = 'flex';
+        previewContainer.style.justifyContent = 'center';
+        previewContainer.style.alignItems = 'center';
     } else {
         // Apply the selected zoom level
         const zoom = parseFloat(currentZoom);
-        previewArea.style.transform = `scale(${zoom})`;
-        previewArea.style.transformOrigin = 'top center';
+        if (preview) {
+            preview.style.transform = `scale(${zoom})`;
+            preview.style.transformOrigin = 'center center'; // Keep consistent with fit mode
+        }
+        
+        // Calculate if scrollbars are needed based on content size vs container size
+        const scaledWidth = state.width * zoom;
+        const scaledHeight = state.height * zoom;
+        
+        // For non-fit modes, maintain the centering but allow scrolling when needed
+        previewContainer.style.display = 'flex';
+        previewContainer.style.justifyContent = 'center';
+        previewContainer.style.alignItems = 'center';
+        
+        // Restore max-height constraint for non-fit modes
+        previewContainer.style.maxHeight = 'calc(100vh - 250px)';
+        
+        // Use the same improved container dimensions for consistency
+        const availableWidth = containerWidth + horizontalPadding; // Add back padding for scroll calculation
+        const availableHeight = containerHeight + verticalPadding;
+        
+        // Only show scrollbars if the scaled content exceeds the available space
+        if (scaledWidth > availableWidth || scaledHeight > availableHeight) {
+            previewContainer.style.overflow = 'auto';
+        } else {
+            previewContainer.style.overflow = 'hidden';
+        }
     }
 }
 
@@ -159,13 +218,33 @@ function updatePreview(elements) {
         // Set the dimensions of the preview area to match the canvas dimensions
         previewArea.style.width = `${state.width}px`;
         previewArea.style.height = `${state.height}px`;
-        previewArea.style.overflow = 'visible';
+        previewArea.style.overflow = 'visible'; // Keep the preview area's content visible
         previewArea.style.margin = 'auto'; // Center the preview area
+    }
+    
+    // Initialize the preview container's CSS properties
+    // The applyZoom function will adjust these as needed
+    if (previewContainer) {
+        previewContainer.style.overflow = 'hidden';
+        previewContainer.style.display = 'flex';
+        previewContainer.style.justifyContent = 'center';
+        previewContainer.style.alignItems = 'center';
     }
     
     // Apply the current zoom level
     if (zoomLevel) {
-        applyZoom(zoomLevel.value, previewArea, previewContainer);
+        // For very large dimensions, automatically use 'fit' mode regardless of selection
+        // This prevents issues with extremely large canvases
+        const isVeryLarge = state.width > 3000 || state.height > 3000;
+        const zoomValue = isVeryLarge && zoomLevel.value !== 'fit' ? 'fit' : zoomLevel.value;
+        
+        applyZoom(zoomValue, previewArea, previewContainer);
+        
+        // If dimensions are very large and not using 'fit', show a message or adjust the dropdown
+        if (isVeryLarge && zoomLevel.value !== 'fit') {
+            // Set the dropdown to 'fit' for better user experience
+            zoomLevel.value = 'fit';
+        }
     }
     
     preview.style.width = `${state.width}px`;

@@ -19,6 +19,7 @@ import {
     centerText, 
     repositionText, 
     hideSnapGuides, 
+    updateGuidePositions,
     drawTextToCanvas,
     setupTextDragAndDrop
 } from './modules/textHandling.js';
@@ -118,6 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Wrapper functions that use the imported modules with the DOM elements
     function updatePreviewWrapper() {
         updatePreview(elements);
+        // Ensure guides are properly positioned after preview update
+        updateGuidePositions(guideV, guideH, preview);
     }
     
     function updateTextPreviewWrapper() {
@@ -176,7 +179,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Add event listener for zoom level changes
         if (zoomLevel) {
-            zoomLevel.addEventListener('change', () => applyZoom(zoomLevel.value, previewArea, previewContainer));
+            zoomLevel.addEventListener('change', () => {
+                // Use updatePreview to ensure proper synchronization
+                updatePreviewWrapper();
+            });
         }
         
         // Background type selection
@@ -404,6 +410,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateControlVisibilityWrapper();
         updatePreviewWrapper();
         centerTextWrapper();
+        
+        // Apply zoom after a short delay to ensure DOM is fully ready
+        setTimeout(() => {
+            updatePreviewWrapper();
+        }, 100);
     }
 
     // Wait for fonts to be ready before initializing to ensure correct text dimensions

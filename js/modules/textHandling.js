@@ -43,6 +43,9 @@ function centerText(preview, textPreview, guideV, guideH) {
     // Update the position
     repositionText(textPreview);
     
+    // Update guide positions
+    updateGuidePositions(guideV, guideH, preview);
+    
     // Show guides briefly to indicate centering
     guideV.style.display = 'block';
     guideH.style.display = 'block';
@@ -64,6 +67,23 @@ function repositionText(textPreview) {
         textPreview.style.left = '';
         textPreview.style.top = '';
     }
+}
+
+/**
+ * Update guide positions based on preview dimensions
+ * @param {HTMLElement} guideV - The vertical guide element
+ * @param {HTMLElement} guideH - The horizontal guide element
+ * @param {HTMLElement} preview - The preview element
+ */
+function updateGuidePositions(guideV, guideH, preview) {
+    // Ensure guides are positioned correctly based on current preview dimensions
+    guideV.style.left = '50%';
+    guideV.style.height = '100%';
+    guideV.style.top = '0';
+    
+    guideH.style.top = '50%';
+    guideH.style.width = '100%';
+    guideH.style.left = '0';
 }
 
 /**
@@ -118,7 +138,7 @@ function dragMove(e, preview, textPreview, guideV, guideH) {
     dragStartY = clientY;
     
     // Snap to guides logic
-    const snapThreshold = 10; // Slightly increased threshold for easier snapping
+    const snapThreshold = 15; // Increased threshold for easier snapping
     
     // Get the actual dimensions of the preview and text
     const previewWidth = parseInt(preview.style.width) || state.width;
@@ -133,6 +153,9 @@ function dragMove(e, preview, textPreview, guideV, guideH) {
     // Calculate preview center
     const previewCenterX = previewWidth / 2;
     const previewCenterY = previewHeight / 2;
+    
+    // Update guide positions to ensure they're correctly placed
+    updateGuidePositions(guideV, guideH, preview);
 
     // Snap to vertical center (horizontal guide)
     if (Math.abs(textCenterY - previewCenterY) < snapThreshold) {
@@ -272,6 +295,8 @@ function drawTextToCanvas(ctx, scaleFactor) {
  * @param {HTMLElement} guideH - The horizontal guide element
  */
 function setupTextDragAndDrop(textPreview, preview, guideV, guideH) {
+    // Initialize guide positions
+    updateGuidePositions(guideV, guideH, preview);
     // Define the event handlers as named functions so they can be properly removed
     function handleMouseMove(e) {
         dragMove(e, preview, textPreview, guideV, guideH);
@@ -313,6 +338,7 @@ export {
     centerText, 
     repositionText, 
     hideSnapGuides, 
+    updateGuidePositions, 
     dragStart, 
     dragMove, 
     dragEnd, 
