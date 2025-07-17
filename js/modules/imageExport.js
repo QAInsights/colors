@@ -135,25 +135,33 @@ function drawBackgroundToCanvas(ctx) {
                                 break;
 
                             case 'original':
-                                // Original: use the actual image dimensions
+                                // Original: use the actual image dimensions but ensure it fits within the canvas
+                                // This needs to match exactly what happens in the UI with CSS background-size
+                                
+                                // Start with the original dimensions
                                 drawWidth = img.width;
                                 drawHeight = img.height;
-                                offsetX = (width - drawWidth) / 2;
-                                offsetY = (height - drawHeight) / 2;
-
-                                // Ensure the image is centered and doesn't exceed canvas dimensions
-                                if (drawWidth > width) {
-                                    const scale = width / drawWidth;
-                                    drawWidth *= scale;
-                                    drawHeight *= scale;
-                                    offsetX = 0;
-                                }
-
-                                if (drawHeight > height) {
-                                    const scale = height / drawHeight;
-                                    drawWidth *= scale;
-                                    drawHeight *= scale;
-                                    offsetY = 0;
+                                
+                                // Calculate the center position
+                                offsetX = Math.max(0, (width - drawWidth) / 2);
+                                offsetY = Math.max(0, (height - drawHeight) / 2);
+                                
+                                // Check if the image is too large for the canvas
+                                if (drawWidth > width || drawHeight > height) {
+                                    // This matches the CSS behavior in the UI
+                                    if (imgRatio > canvasRatio) {
+                                        // Image is wider than container - constrain by width
+                                        drawWidth = width;
+                                        drawHeight = width / imgRatio;
+                                        offsetX = 0;
+                                        offsetY = Math.max(0, (height - drawHeight) / 2);
+                                    } else {
+                                        // Image is taller than container - constrain by height
+                                        drawHeight = height;
+                                        drawWidth = height * imgRatio;
+                                        offsetY = 0;
+                                        offsetX = Math.max(0, (width - drawWidth) / 2);
+                                    }
                                 }
                                 break;
 
@@ -170,6 +178,12 @@ function drawBackgroundToCanvas(ctx) {
                                 }
                         }
 
+                        // Fill the background with a color to make transparent areas visible
+                        if (imageFit !== 'cover') {
+                            tempCtx.fillStyle = '#f0f0f0';
+                            tempCtx.fillRect(0, 0, width, height);
+                        }
+
                         // Draw the image to the temporary canvas
                         tempCtx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
@@ -179,6 +193,13 @@ function drawBackgroundToCanvas(ctx) {
                             // This is a simplified blur implementation
                             const blurredCanvas = applyBlurToCanvas(tempCanvas, imageBlur);
                             tempCtx.clearRect(0, 0, width, height);
+                            
+                            // Fill the background again if not using cover mode
+                            if (imageFit !== 'cover') {
+                                tempCtx.fillStyle = '#f0f0f0';
+                                tempCtx.fillRect(0, 0, width, height);
+                            }
+                            
                             tempCtx.drawImage(blurredCanvas, 0, 0);
                         }
 
@@ -188,6 +209,9 @@ function drawBackgroundToCanvas(ctx) {
                             tempCtx.fillStyle = `rgba(255, 255, 255, ${1 - imageOpacity})`;
                             tempCtx.fillRect(0, 0, width, height);
                         }
+
+                        // Reset composite operation
+                        tempCtx.globalCompositeOperation = 'source-over';
 
                         // Draw the processed image to the main canvas
                         ctx.drawImage(tempCanvas, 0, 0);

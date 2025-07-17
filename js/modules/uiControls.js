@@ -299,9 +299,34 @@ function updatePreview(elements) {
                         backgroundLayer.style.backgroundRepeat = 'no-repeat';
                         break;
                     case 'original':
+                        // For original size, we need to handle large images differently
+                        // We'll use the same scaling logic as in the export function
                         backgroundLayer.style.backgroundSize = 'auto';
                         backgroundLayer.style.backgroundPosition = 'center';
                         backgroundLayer.style.backgroundRepeat = 'no-repeat';
+                        
+                        // We can't easily determine the image dimensions in CSS
+                        // So we'll create a temporary image to check dimensions
+                        const tempImg = new Image();
+                        tempImg.onload = () => {
+                            const imgRatio = tempImg.width / tempImg.height;
+                            const containerRatio = state.width / state.height;
+                            
+                            // If image is too large, scale it down proportionally
+                            if (tempImg.width > state.width || tempImg.height > state.height) {
+                                if (imgRatio > containerRatio) {
+                                    // Image is wider than container
+                                    backgroundLayer.style.backgroundSize = '100% auto';
+                                } else {
+                                    // Image is taller than container
+                                    backgroundLayer.style.backgroundSize = 'auto 100%';
+                                }
+                            } else {
+                                // Image fits within container, use actual size
+                                backgroundLayer.style.backgroundSize = 'auto';
+                            }
+                        };
+                        tempImg.src = state.imageSrc;
                         break;
                     default:
                         backgroundLayer.style.backgroundSize = 'contain';
