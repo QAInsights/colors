@@ -71,6 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const gradientColorCount = document.getElementById('gradient-color-count');
     const gradientDirection = document.getElementById('gradientDirection');
     const imageUpload = document.getElementById('imageUpload');
+    const imageBlur = document.getElementById('imageBlur');
+    const imageBlurValue = document.getElementById('imageBlurValue');
+    const imageOpacity = document.getElementById('imageOpacity');
+    const imageOpacityValue = document.getElementById('imageOpacityValue');
+    const imageFitOptions = document.getElementById('imageFitOptions');
 
     const textContent = document.getElementById('textContent');
     const fontFamily = document.getElementById('fontFamily');
@@ -225,6 +230,33 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Image upload
         imageUpload.addEventListener('change', handleImageUploadWrapper);
+        
+        // Image blur
+        imageBlur.addEventListener('input', (e) => {
+            const blurValue = parseInt(e.target.value, 10);
+            updateState({ imageBlur: blurValue });
+            imageBlurValue.textContent = `${blurValue}px`;
+            updatePreviewWrapper();
+        });
+        
+        // Image opacity
+        imageOpacity.addEventListener('input', (e) => {
+            const opacityValue = parseFloat(e.target.value);
+            updateState({ imageOpacity: opacityValue });
+            imageOpacityValue.textContent = `${Math.round(opacityValue * 100)}%`;
+            updatePreviewWrapper();
+        });
+        
+        // Image fit options
+        imageFitOptions.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const fitMode = e.target.dataset.fit;
+                updateState({ imageFit: fitMode });
+                document.querySelectorAll('#imageFitOptions button').forEach(btn => btn.classList.remove('bg-blue-500', 'text-white'));
+                e.target.classList.add('bg-blue-500', 'text-white');
+                updatePreviewWrapper();
+            }
+        });
         
         // Dimension inputs
         widthInput.addEventListener('change', handleDimensionChangeWrapper);

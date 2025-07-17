@@ -256,24 +256,78 @@ function updatePreview(elements) {
     patternSvg.setAttribute('height', state.height);
     patternSvg.setAttribute('viewBox', `0 0 ${state.width} ${state.height}`);
 
+    // Get the background layer element
+    const backgroundLayer = preview.querySelector('#backgroundLayer');
+    
     // Clear previous background
-    preview.style.backgroundImage = 'none';
     preview.style.backgroundColor = 'transparent';
+    backgroundLayer.style.backgroundImage = 'none';
+    backgroundLayer.style.backgroundColor = 'transparent';
+    
+    // Make sure the background layer has the same border radius as the preview
+    backgroundLayer.style.borderRadius = `${state.borderRadius}px`;
+
+    // Ensure text is above the background layer
+    if (textPreview) {
+        textPreview.style.position = 'relative';
+        textPreview.style.zIndex = '5';
+    }
 
     switch (state.bgType) {
         case 'color':
-            preview.style.backgroundColor = state.color1;
+            backgroundLayer.style.backgroundColor = state.color1;
             break;
         case 'gradient':
             if (state.gradientColors.length > 1) {
-                preview.style.backgroundImage = `linear-gradient(${state.gradientAngle}deg, ${state.gradientColors.join(', ')})`;
+                backgroundLayer.style.backgroundImage = `linear-gradient(${state.gradientAngle}deg, ${state.gradientColors.join(', ')})`;
             }
             break;
         case 'image':
             if (state.imageSrc) {
-                preview.style.backgroundImage = `url(${state.imageSrc})`;
-                preview.style.backgroundSize = 'cover';
-                preview.style.backgroundPosition = 'center';
+                // Apply background image to the background layer
+                backgroundLayer.style.backgroundImage = `url(${state.imageSrc})`;
+                
+                // Apply different background-size based on the selected fit mode
+                switch (state.imageFit) {
+                    case 'cover':
+                        backgroundLayer.style.backgroundSize = 'cover';
+                        backgroundLayer.style.backgroundPosition = 'center';
+                        break;
+                    case 'contain':
+                        backgroundLayer.style.backgroundSize = 'contain';
+                        backgroundLayer.style.backgroundPosition = 'center';
+                        backgroundLayer.style.backgroundRepeat = 'no-repeat';
+                        break;
+                    case 'original':
+                        backgroundLayer.style.backgroundSize = 'auto';
+                        backgroundLayer.style.backgroundPosition = 'center';
+                        backgroundLayer.style.backgroundRepeat = 'no-repeat';
+                        break;
+                    default:
+                        backgroundLayer.style.backgroundSize = 'contain';
+                        backgroundLayer.style.backgroundPosition = 'center';
+                }
+                
+                // Apply blur effect only to the background layer if set
+                if (state.imageBlur > 0) {
+                    backgroundLayer.style.filter = `blur(${state.imageBlur}px)`;
+                    // Add a slight scale to prevent blur edges from showing, but only for cover mode
+                    if (state.imageFit === 'cover') {
+                        backgroundLayer.style.transform = 'scale(1.05)';
+                    } else {
+                        // For other modes, we don't want to scale as it would distort the image
+                        backgroundLayer.style.transform = 'none';
+                    }
+                } else {
+                    backgroundLayer.style.filter = 'none';
+                    backgroundLayer.style.transform = 'none';
+                }
+                
+                // Apply opacity effect if less than 1
+                if (state.imageOpacity < 1) {
+                    let currentBgImage = `url(${state.imageSrc})`;
+                    backgroundLayer.style.backgroundImage = `linear-gradient(rgba(255,255,255,${1-state.imageOpacity}), rgba(255,255,255,${1-state.imageOpacity})), ${currentBgImage}`;
+                }
             }
             break;
     }

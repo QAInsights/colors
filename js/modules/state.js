@@ -11,6 +11,9 @@ const initialState = {
     gradientColors: ['#8b5cf6', '#ec4899'],
     gradientAngle: 90,
     imageSrc: null,
+    imageBlur: 0,
+    imageOpacity: 1,
+    imageFit: 'contain', // Options: 'cover', 'contain', 'original'
     text: 'Hello, World!',
     fontFamily: 'Montserrat',
     fontSize: 72,
