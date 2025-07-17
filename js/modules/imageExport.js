@@ -57,11 +57,23 @@ function drawBackgroundToCanvas(ctx) {
 
         case 'gradient':
             if (gradientColors.length > 1) {
-                const angleRad = (gradientAngle * Math.PI) / 180;
-                const x1 = width / 2 - Math.cos(angleRad) * width / 2;
-                const y1 = height / 2 - Math.sin(angleRad) * height / 2;
-                const x2 = width / 2 + Math.cos(angleRad) * width / 2;
-                const y2 = height / 2 + Math.sin(angleRad) * height / 2;
+                // Convert CSS gradient angle to canvas gradient coordinates
+                // CSS gradients: 0deg is bottom to top, 90deg is left to right
+                // Canvas: we need start and end points
+
+                // Adjust the angle to match CSS behavior
+                // In CSS, 0deg points up (bottom to top), 90deg points right (left to right)
+                const cssAngle = gradientAngle % 360;
+
+                // Convert CSS angle to radians for canvas
+                // CSS angles need to be rotated by 90 degrees counterclockwise for canvas
+                const canvasAngle = ((cssAngle + 90) % 360) * Math.PI / 180;
+
+                // Calculate start and end points for the gradient
+                const x1 = width / 2 + Math.cos(canvasAngle) * width;
+                const y1 = height / 2 + Math.sin(canvasAngle) * height;
+                const x2 = width / 2 - Math.cos(canvasAngle) * width;
+                const y2 = height / 2 - Math.sin(canvasAngle) * height;
 
                 const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
                 gradientColors.forEach((color, index) => {
@@ -519,8 +531,8 @@ async function downloadHighResolutionImage(format = 'png', scaleFactor = 4) {
         // Draw background
         await drawBackgroundToCanvas(ctx);
 
-        // Draw pattern
-        drawPatternToCanvas(ctx);
+        // Draw pattern with the scale factor
+        drawPatternToCanvas(ctx, scaleFactor);
 
         // Draw text
         drawTextToCanvas(ctx, scaleFactor);

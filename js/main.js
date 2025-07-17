@@ -332,22 +332,30 @@ document.addEventListener('DOMContentLoaded', () => {
             updateState({ patternColor: e.target.value }); 
             patternColorText.value = e.target.value; 
             drawPatternWrapper(); 
+            // Ensure the pattern is updated for download
+            updatePreviewWrapper();
         });
         
         patternColorText.addEventListener('change', (e) => { 
             updateState({ patternColor: e.target.value }); 
             patternColor.value = e.target.value; 
             drawPatternWrapper(); 
+            // Ensure the pattern is updated for download
+            updatePreviewWrapper();
         });
         
         patternOpacity.addEventListener('input', (e) => { 
             updateState({ patternOpacity: parseFloat(e.target.value) }); 
             drawPatternWrapper(); 
+            // Ensure the pattern is updated for download
+            updatePreviewWrapper();
         });
         
         patternCount.addEventListener('input', (e) => { 
             updateState({ patternCount: parseInt(e.target.value, 10) }); 
             drawPatternWrapper(); 
+            // Ensure the pattern is updated for download
+            updatePreviewWrapper();
         });
         
         // Border radius
