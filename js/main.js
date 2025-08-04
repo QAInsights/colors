@@ -40,6 +40,13 @@ import {
     updatePreview,
     getYear
 } from './modules/uiControls.js';
+import { 
+    initializeWatermark, 
+    downloadAllWatermarkedImages, 
+    downloadWatermarkedImage, 
+    watermarkState,
+    updateWatermarkPreview 
+} from './modules/watermark.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Element References ---
@@ -457,10 +464,185 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     }
 
+    // Tab switching functionality
+    function initializeTabs() {
+        const tabGenerator = document.getElementById('tab-generator');
+        const tabWatermark = document.getElementById('tab-watermark');
+        const generatorControls = document.getElementById('generator-controls');
+        const watermarkControls = document.getElementById('watermark-controls');
+        const generatorPreview = document.getElementById('generator-preview');
+        const watermarkPreview = document.getElementById('watermark-preview');
+        
+        // Tab switching logic
+        function switchToGenerator() {
+            // Update tab buttons
+            tabGenerator.classList.add('bg-blue-500', 'text-white');
+            tabGenerator.classList.remove('text-gray-600', 'dark:text-gray-300');
+            tabWatermark.classList.remove('bg-blue-500', 'text-white');
+            tabWatermark.classList.add('text-gray-600', 'dark:text-gray-300');
+            
+            // Show/hide controls
+            generatorControls.classList.remove('hidden');
+            watermarkControls.classList.add('hidden');
+            
+            // Show/hide previews
+            generatorPreview.classList.remove('hidden');
+            watermarkPreview.classList.add('hidden');
+        }
+        
+        function switchToWatermark() {
+            // Update tab buttons
+            tabWatermark.classList.add('bg-blue-500', 'text-white');
+            tabWatermark.classList.remove('text-gray-600', 'dark:text-gray-300');
+            tabGenerator.classList.remove('bg-blue-500', 'text-white');
+            tabGenerator.classList.add('text-gray-600', 'dark:text-gray-300');
+            
+            // Show/hide controls
+            watermarkControls.classList.remove('hidden');
+            generatorControls.classList.add('hidden');
+            
+            // Show/hide previews
+            watermarkPreview.classList.remove('hidden');
+            generatorPreview.classList.add('hidden');
+        }
+        
+        // Add event listeners
+        if (tabGenerator) {
+            tabGenerator.addEventListener('click', switchToGenerator);
+        }
+        
+        if (tabWatermark) {
+            tabWatermark.addEventListener('click', switchToWatermark);
+        }
+        
+        // Initialize watermark download buttons
+        const downloadCurrentBtn = document.getElementById('download-current-watermarked');
+        const downloadAllBtn = document.getElementById('download-all-watermarked');
+        
+        if (downloadCurrentBtn) {
+            downloadCurrentBtn.addEventListener('click', () => {
+                const currentImage = watermarkState.images[watermarkState.currentImageIndex];
+                if (currentImage) {
+                    downloadWatermarkedImage(currentImage);
+                } else {
+                    alert('Please select an image first.');
+                }
+            });
+        }
+        
+        if (downloadAllBtn) {
+            downloadAllBtn.addEventListener('click', () => {
+                downloadAllWatermarkedImages();
+            });
+        }
+    }
+
+    // Tab switching functionality
+    function initializeTabs() {
+    const tabGenerator = document.getElementById('tab-generator');
+    const tabWatermark = document.getElementById('tab-watermark');
+    const generatorControls = document.getElementById('generator-controls');
+    const watermarkControls = document.getElementById('watermark-controls');
+    const generatorPreview = document.getElementById('generator-preview');
+    const watermarkPreview = document.getElementById('watermark-preview');
+    
+    // Tab switching logic
+    function switchToGenerator() {
+        // Update tab buttons
+        tabGenerator.classList.add('bg-blue-500', 'text-white');
+        tabGenerator.classList.remove('text-gray-600', 'dark:text-gray-300');
+        tabWatermark.classList.remove('bg-blue-500', 'text-white');
+        tabWatermark.classList.add('text-gray-600', 'dark:text-gray-300');
+        
+        // Show/hide controls
+        generatorControls.classList.remove('hidden');
+        watermarkControls.classList.add('hidden');
+        
+        // Show/hide previews
+        generatorPreview.classList.remove('hidden');
+        generatorPreview.style.display = 'flex';
+        watermarkPreview.classList.add('hidden');
+        watermarkPreview.style.display = 'none';
+        
+        // Restore generator preview content
+        const textPreview = document.getElementById('textPreview');
+        if (textPreview) {
+            textPreview.style.display = '';
+        }
+    }
+    
+    function switchToWatermark() {
+        // Update tab buttons
+        tabWatermark.classList.add('bg-blue-500', 'text-white');
+        tabWatermark.classList.remove('text-gray-600', 'dark:text-gray-300');
+        tabGenerator.classList.remove('bg-blue-500', 'text-white');
+        tabGenerator.classList.add('text-gray-600', 'dark:text-gray-300');
+        
+        // Show/hide controls
+        watermarkControls.classList.remove('hidden');
+        generatorControls.classList.add('hidden');
+        
+        // Show/hide previews
+        watermarkPreview.classList.remove('hidden');
+        watermarkPreview.style.display = 'block';
+        generatorPreview.classList.add('hidden');
+        generatorPreview.style.display = 'none';
+        
+        // Clear generator preview content to prevent bleeding through
+        const textPreview = document.getElementById('textPreview');
+        if (textPreview) {
+            textPreview.style.display = 'none';
+        }
+        
+        // Ensure watermark preview is updated
+        if (typeof updateWatermarkPreview === 'function') {
+            updateWatermarkPreview();
+        }
+    }
+    
+    // Add event listeners
+    tabGenerator.addEventListener('click', switchToGenerator);
+    tabWatermark.addEventListener('click', switchToWatermark);
+    
+    // Initialize with generator tab active by default
+    switchToGenerator();
+    
+    // Check if watermark tab should be active (if user was on watermark tab)
+    if (tabWatermark.classList.contains('bg-blue-500')) {
+        switchToWatermark();
+    }
+}
+
+// Initialize watermark download buttons
+function initializeWatermarkDownloads() {
+    const downloadCurrentBtn = document.getElementById('download-current-watermarked');
+    const downloadAllBtn = document.getElementById('download-all-watermarked');
+    
+    if (downloadCurrentBtn) {
+        downloadCurrentBtn.addEventListener('click', () => {
+            const currentImage = watermarkState.images[watermarkState.currentImageIndex];
+            if (currentImage) {
+                downloadWatermarkedImage(currentImage);
+            } else {
+                alert('Please select an image first.');
+            }
+        });
+    }
+    
+    if (downloadAllBtn) {
+        downloadAllBtn.addEventListener('click', () => {
+            downloadAllWatermarkedImages();
+        });
+    }
+}
+
     // Wait for fonts to be ready before initializing to ensure correct text dimensions
     document.fonts.ready.then(() => {
         initializeTheme();
         initialize();
+        initializeTabs();
+        initializeWatermark();
+        initializeWatermarkDownloads();
     });
 
     // Get current year
