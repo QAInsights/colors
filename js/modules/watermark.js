@@ -192,7 +192,10 @@ function setupWatermarkControls() {
         const element = document.getElementById(id);
         if (element) {
             element.addEventListener('input', (e) => {
+                console.log(`Slider ${id} changed to:`, e.target.value);
                 handler(e.target.value);
+                console.log('Calling updateWatermarkControls...');
+                updateWatermarkControls(); // Update display values
                 updateWatermarkPreview();
             });
         }
@@ -201,39 +204,52 @@ function setupWatermarkControls() {
 
 // Update watermark controls with current values
 function updateWatermarkControls() {
-    const settings = watermarkState.watermarkSettings;
-    
-    const controls = {
-        'watermark-x': settings.x,
-        'watermark-y': settings.y,
-        'watermark-opacity': settings.opacity,
-        'watermark-scale': settings.scale,
-        'watermark-rotation': settings.rotation,
-        'watermark-blend-mode': settings.blendMode
-    };
-    
-    Object.entries(controls).forEach(([id, value]) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.value = value;
-        }
-    });
-    
-    // Update display values
-    const displayElements = {
-        'watermark-x-display': `${settings.x}%`,
-        'watermark-y-display': `${settings.y}%`,
-        'watermark-opacity-display': `${Math.round(settings.opacity * 100)}%`,
-        'watermark-scale-display': `${Math.round(settings.scale * 100)}%`,
-        'watermark-rotation-display': `${settings.rotation}°`
-    };
-    
-    Object.entries(displayElements).forEach(([id, value]) => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = value;
-        }
-    });
+    try {
+        console.log('updateWatermarkControls called, settings:', watermarkState.watermarkSettings);
+        const settings = watermarkState.watermarkSettings;
+        
+        const controls = {
+            'watermark-x': settings.x,
+            'watermark-y': settings.y,
+            'watermark-opacity': settings.opacity,
+            'watermark-scale': settings.scale,
+            'watermark-rotation': settings.rotation,
+            'watermark-blend-mode': settings.blendMode
+        };
+        
+        Object.entries(controls).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.value = value;
+            }
+        });
+        
+        // Update display values
+        const displayElements = {
+            'watermark-x-display': `${settings.x}%`,
+            'watermark-y-display': `${settings.y}%`,
+            'watermark-opacity-display': `${Math.round(settings.opacity * 100)}%`,
+            'watermark-scale-display': `${Math.round(settings.scale * 100)}%`,
+            'watermark-rotation-display': `${settings.rotation}°`
+        };
+        
+        console.log('Display elements to update:', displayElements);
+        
+        Object.entries(displayElements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            console.log(`Looking for display element ${id}:`, element);
+            if (element) {
+                console.log(`Updating ${id} to:`, value);
+                element.textContent = value;
+            } else {
+                console.error(`Display element ${id} not found!`);
+            }
+        });
+        
+        console.log('updateWatermarkControls completed successfully');
+    } catch (error) {
+        console.error('Error in updateWatermarkControls:', error);
+    }
 }
 
 // Update watermark preview
