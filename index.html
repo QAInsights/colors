@@ -52,10 +52,24 @@
                 patterns.</p>
         </header>
 
+        <!-- Tab Navigation -->
+        <div class="mb-8">
+            <div class="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1 max-w-md mx-auto">
+                <button id="tab-generator" class="flex-1 py-3 px-6 rounded-md font-medium transition-all duration-200 bg-blue-500 text-white">
+                    Image Generator
+                </button>
+                <button id="tab-watermark" class="flex-1 py-3 px-6 rounded-md font-medium transition-all duration-200 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white">
+                    Watermark Tool
+                </button>
+            </div>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-8">
 
             <!-- Control Panel -->
             <div class="w-full lg:w-1/3 space-y-6">
+                <!-- Generator Controls (default visible) -->
+                <div id="generator-controls" class="space-y-6">
                 <!-- Background Controls -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                     <h2 class="text-2xl font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
@@ -347,37 +361,210 @@
                             JPG</button>
                     </div>
                 </div>
+                </div> <!-- End Generator Controls -->
+
+                <!-- Watermark Controls (hidden by default) -->
+                <div id="watermark-controls" class="space-y-6 hidden">
+                    <!-- Image Upload Section -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+                            Upload Images</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="font-medium text-gray-700 dark:text-gray-300">Select Multiple Images</label>
+                                <input type="file" id="watermark-image-upload" accept="image/*" multiple
+                                    title="Select multiple images to add watermarks to"
+                                    class="w-full text-sm text-gray-500 dark:text-gray-400 mt-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/50 dark:file:text-blue-300 dark:hover:file:bg-blue-900">
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                Select multiple images to add watermarks to. Images will appear in the preview panel on the right.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Watermark Upload Section -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+                            Watermark Image</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="font-medium text-gray-700 dark:text-gray-300">Upload Watermark</label>
+                                <input type="file" id="watermark-upload" accept="image/*"
+                                    title="Upload your watermark image (PNG recommended for transparency)"
+                                    class="w-full text-sm text-gray-500 dark:text-gray-400 mt-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 dark:file:bg-green-900/50 dark:file:text-green-300 dark:hover:file:bg-green-900">
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">
+                                Upload your watermark image (PNG recommended for transparency).
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Watermark Position Presets -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+                            Quick Positions</h2>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setWatermarkPosition('top-left')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                ↖ Top Left
+                            </button>
+                            <button onclick="setWatermarkPosition('top-center')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                ↑ Top Center
+                            </button>
+                            <button onclick="setWatermarkPosition('top-right')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                ↗ Top Right
+                            </button>
+                            <button onclick="setWatermarkPosition('center-left')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                ← Center Left
+                            </button>
+                            <button onclick="setWatermarkPosition('center')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                ⊙ Center
+                            </button>
+                            <button onclick="setWatermarkPosition('center-right')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                → Center Right
+                            </button>
+                            <button onclick="setWatermarkPosition('bottom-left')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                ↙ Bottom Left
+                            </button>
+                            <button onclick="setWatermarkPosition('bottom-center')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                ↓ Bottom Center
+                            </button>
+                            <button onclick="setWatermarkPosition('bottom-right')" class="p-3 bg-gray-100 dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-800 rounded-lg transition-colors duration-200 text-sm">
+                                ↘ Bottom Right
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Watermark Customization -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+                            Customize Watermark</h2>
+                        <div class="space-y-6">
+                            <!-- Position Controls -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <label for="watermark-x" class="font-medium text-gray-700 dark:text-gray-300">X Position</label>
+                                        <span id="watermark-x-display" class="text-sm text-gray-500 dark:text-gray-400">50%</span>
+                                    </div>
+                                    <input type="range" id="watermark-x" min="0" max="100" value="50"
+                                        class="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <label for="watermark-y" class="font-medium text-gray-700 dark:text-gray-300">Y Position</label>
+                                        <span id="watermark-y-display" class="text-sm text-gray-500 dark:text-gray-400">50%</span>
+                                    </div>
+                                    <input type="range" id="watermark-y" min="0" max="100" value="50"
+                                        class="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600">
+                                </div>
+                            </div>
+
+                            <!-- Opacity and Scale -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <label for="watermark-opacity" class="font-medium text-gray-700 dark:text-gray-300">Opacity</label>
+                                        <span id="watermark-opacity-display" class="text-sm text-gray-500 dark:text-gray-400">70%</span>
+                                    </div>
+                                    <input type="range" id="watermark-opacity" min="0" max="1" step="0.05" value="0.7"
+                                        class="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <label for="watermark-scale" class="font-medium text-gray-700 dark:text-gray-300">Size</label>
+                                        <span id="watermark-scale-display" class="text-sm text-gray-500 dark:text-gray-400">30%</span>
+                                    </div>
+                                    <input type="range" id="watermark-scale" min="0.1" max="2" step="0.05" value="0.3"
+                                        class="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600">
+                                </div>
+                            </div>
+
+                            <!-- Rotation and Blend Mode -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <div class="flex justify-between items-center">
+                                        <label for="watermark-rotation" class="font-medium text-gray-700 dark:text-gray-300">Rotation</label>
+                                        <span id="watermark-rotation-display" class="text-sm text-gray-500 dark:text-gray-400">0°</span>
+                                    </div>
+                                    <input type="range" id="watermark-rotation" min="-180" max="180" value="0"
+                                        class="w-full mt-2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-600">
+                                </div>
+                                <div>
+                                    <label for="watermark-blend-mode" class="font-medium text-gray-700 dark:text-gray-300">Blend Mode</label>
+                                    <select id="watermark-blend-mode"
+                                        class="w-full mt-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 border-transparent appearance-none">
+                                        <option value="normal">Normal</option>
+                                        <option value="multiply">Multiply</option>
+                                        <option value="screen">Screen</option>
+                                        <option value="overlay">Overlay</option>
+                                        <option value="soft-light">Soft Light</option>
+                                        <option value="hard-light">Hard Light</option>
+                                        <option value="color-dodge">Color Dodge</option>
+                                        <option value="color-burn">Color Burn</option>
+                                        <option value="darken">Darken</option>
+                                        <option value="lighten">Lighten</option>
+                                        <option value="difference">Difference</option>
+                                        <option value="exclusion">Exclusion</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download Section -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
+                        <h2 class="text-2xl font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
+                            Download</h2>
+                        <div class="space-y-4">
+                            <div class="flex gap-4">
+                                <button id="download-current-watermarked"
+                                    class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors duration-200">
+                                    Download Current
+                                </button>
+                                <button id="download-all-watermarked"
+                                    class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-colors duration-200">
+                                    Download All
+                                </button>
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400 text-center">
+                                Files will be saved with "_watermarked" suffix to preserve originals
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Preview Area -->
             <div class="w-full lg:w-2/3">
                 <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-lg h-full">
-                    <!-- Zoom Controls -->
-                    <div class="flex justify-end mb-2">
-                        <div class="relative w-40">
-                            <select id="zoomLevel"
-                                class="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 border-transparent appearance-none cursor-pointer text-sm">
-                                <option value="0.25">25% zoom</option>
-                                <option value="0.5">50% zoom</option>
-                                <option value="0.75">75% zoom</option>
-                                <option value="1">100% zoom</option>
-                                <option value="1.25">125% zoom</option>
-                                <option value="1.5">150% zoom</option>
-                                <option value="2">200% zoom</option>
-                                <option value="fit" selected>Fit to screen</option>
-                            </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
+                    <!-- Generator Preview Container -->
+                    <div id="generator-preview" class="preview-container"
+                        style="max-height: calc(100vh - 250px); overflow: hidden; display: flex; flex-direction: column;">
+                        <!-- Zoom Controls -->
+                        <div class="flex justify-end mb-2">
+                            <div class="relative w-40">
+                                <select id="zoomLevel"
+                                    class="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 border-transparent appearance-none cursor-pointer text-sm">
+                                    <option value="0.25">25% zoom</option>
+                                    <option value="0.5">50% zoom</option>
+                                    <option value="0.75">75% zoom</option>
+                                    <option value="1">100% zoom</option>
+                                    <option value="1.25">125% zoom</option>
+                                    <option value="1.5">150% zoom</option>
+                                    <option value="2">200% zoom</option>
+                                    <option value="fit" selected>Fit to screen</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Preview Container -->
-                    <div class="preview-container"
-                        style="max-height: calc(100vh - 250px); overflow: hidden; display: flex; justify-content: center; align-items: center;">
+                        <!-- Generator Preview Content -->
+                        <div style="flex: 1; display: flex; justify-content: center; align-items: center;">
                         <div class="preview-area rounded-lg">
                             <div id="preview" class="shadow-2xl relative">
                                 <div id="backgroundLayer" class="absolute inset-0"></div>
@@ -386,6 +573,35 @@
                                 </div>
                                 <div id="guide-v" class="snap-guide vertical"></div>
                                 <div id="guide-h" class="snap-guide horizontal"></div>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+
+                    <!-- Watermark Preview Container -->
+                    <div id="watermark-preview" class="hidden preview-container"
+                        style="max-height: calc(100vh - 250px); overflow: hidden;">
+                        <div class="flex gap-4 h-full">
+                            <!-- Main Preview -->
+                            <div class="flex-1">
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 h-full flex items-center justify-center">
+                                    <canvas id="watermark-preview-canvas" class="max-w-full max-h-full border border-gray-300 dark:border-gray-600 rounded shadow-lg"></canvas>
+                                </div>
+                            </div>
+                            <!-- Image Gallery -->
+                            <div class="w-80">
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 h-full">
+                                    <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Uploaded Images</h3>
+                                    <div id="watermark-image-preview" class="grid grid-cols-2 gap-3 overflow-y-auto" style="max-height: calc(100vh - 400px);">
+                                        <!-- Uploaded images will appear here -->
+                                        <div class="col-span-2 text-center text-gray-500 dark:text-gray-400 py-8">
+                                            <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                            <p class="text-sm">No images uploaded yet</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
